@@ -96,8 +96,7 @@ function @walk
     preserve <gpr0>
 
   block ^entry
-    add rdi, 1
-    mov <gpr0>, rdi
+    lea <gpr0>, [rdi+<off0>]
 
   block ^outer
     cmp.i32 rsi, 0
@@ -112,8 +111,7 @@ function @walk
     sub rsi, 1
     mov rdi, <gpr0>
     call @mix [args=(rsi,rdi)]
-    sext.i32 rax
-    mov rsi, rax
+    sext.i32 rsi, rax
 
   block ^step
     sub <gpr0>, 1

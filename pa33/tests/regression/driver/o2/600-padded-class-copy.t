@@ -1,6 +1,6 @@
 // A small class whose members leave a gap of padding moves as one object
 // copy (one wide load and store in the back end); a class whose members
-// tile it still moves member by member.
+// tile it moves by its members, two adjacent 32-bit ones as one 64-bit move.
 struct Operand
 {
 	unsigned char kind, sub;

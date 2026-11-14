@@ -349,6 +349,243 @@ bool convert_matching_phis(
 	return changed;
 }
 
+namespace {
+
+// The most steps of a derived phi's chain, and the most phis of a block read for one.
+constexpr size_t kDerivedSteps = 3;
+constexpr unsigned kDerivedPhis = 16;
+
+} // namespace
+
+bool derive_matching_phis(
+	FunctionContext& c, BlockId block, std::vector<Value>& replacements, std::vector<uint32_t>& uses)
+{
+	FunctionBody& body = c.body;
+	const auto resolve = [&](Value v) {
+		while (v.is(ValueKind::Temp) && !replacements[v.index].is(ValueKind::None))
+			v = replacements[v.index];
+		return v;
+	};
+	const auto producer = [&](Value v) -> const Instruction* {
+		return v.is(ValueKind::Temp) && v.index >= body.parameter_count && body.temps[v.index].def != kNoId
+			? &body.instructions[body.temps[v.index].def]
+			: nullptr;
+	};
+	struct Step
+	{
+		BinaryOp op;
+		Value literal;
+	};
+	// A step of a chain: an operation of `type` on a value and a literal that
+	// runs anywhere (no division that could trap).
+	const auto step_of = [&](const Instruction* def, Type type, Step& step) {
+		if (def == nullptr || def->op != Opcode::Binary || !(def->type == type))
+			return false;
+		const Value k = resolve(def->ops[1]);
+		if (!k.is(ValueKind::Integer))
+			return false;
+		step = Step{ static_cast<BinaryOp>(def->sub), k };
+		const uint64_t low = normalize_integer(type, body.literals[k.index]).low;
+		switch (step.op)
+		{
+		case BinaryOp::Add:
+		case BinaryOp::Sub:
+		case BinaryOp::Mul:
+		case BinaryOp::And:
+		case BinaryOp::Or:
+		case BinaryOp::Xor:
+			return true;
+		case BinaryOp::Shl:
+		case BinaryOp::Shr:
+		case BinaryOp::UShr:
+			return low < lowir::integer_bits(type.kind());
+		case BinaryOp::Div:
+		case BinaryOp::Mod:
+			return static_cast<int64_t>(low) > 0;
+		case BinaryOp::UDiv:
+		case BinaryOp::UMod:
+			return low != 0;
+		default:
+			return false;
+		}
+	};
+	const auto sums = [](const Step& step) { return step.op == BinaryOp::Add || step.op == BinaryOp::Sub; };
+	bool changed = false;
+	InstId next = kNoId;
+	for (InstId id = body.blocks[block].first; id != kNoId && body.instructions[id].op == Opcode::Phi; id = next)
+	{
+		const Instruction phi = body.instructions[id];
+		next = phi.next;
+		const Type type = phi.type;
+		if (!type.is_integer() || type.kind() == TypeKind::I1 || type.kind() == TypeKind::I128 || phi.extra_count < 4 ||
+			phi.extra_count > 16)
+			continue;
+		const unsigned bits = lowir::integer_bits(type.kind());
+		const uint64_t mask = bits >= 64 ? ~uint64_t(0) : (uint64_t(1) << bits) - 1;
+		// `v` as a base plus an offset, through sums with literals (a literal: no base).
+		const auto affine = [&](Value v, uint64_t& offset) {
+			offset = 0;
+			for (unsigned depth = 0; depth < 8; ++depth)
+			{
+				const Instruction* def = producer(v);
+				if (def == nullptr || def->op != Opcode::Binary || !(def->type == type))
+					break;
+				const BinaryOp op = static_cast<BinaryOp>(def->sub);
+				const Value a = resolve(def->ops[0]), b = resolve(def->ops[1]);
+				if ((op == BinaryOp::Add || op == BinaryOp::Sub) && b.is(ValueKind::Integer))
+				{
+					const uint64_t k = normalize_integer(type, body.literals[b.index]).low;
+					offset += op == BinaryOp::Add ? k : 0 - k;
+					v = a;
+				}
+				else if (op == BinaryOp::Add && a.is(ValueKind::Integer))
+				{
+					offset += normalize_integer(type, body.literals[a.index]).low;
+					v = b;
+				}
+				else
+					break;
+			}
+			if (v.is(ValueKind::Integer))
+			{
+				offset += normalize_integer(type, body.literals[v.index]).low;
+				v = Value::none();
+			}
+			return v;
+		};
+		std::vector<Step> steps; // the outermost first
+		// Whether `v` is the chain on `x`.
+		const auto derives = [&](Value v, Value x) {
+			Constant cv, cx;
+			if (literal_constant(body, v, cv) && literal_constant(body, x, cx))
+			{
+				for (size_t k = steps.size(); k-- != 0;)
+				{
+					Constant by, out;
+					if (!literal_constant(body, steps[k].literal, by) || !fold_binary(steps[k].op, type, cx, by, out))
+						return false;
+					cx = out;
+				}
+				return cv.kind == cx.kind && same_constant(type, cv, cx);
+			}
+			size_t k = 0;
+			for (; k < steps.size(); ++k)
+			{
+				bool tail = true;
+				for (size_t j = k; j < steps.size() && tail; ++j)
+					tail = sums(steps[j]);
+				if (tail)
+					break;
+				Step step;
+				const Instruction* def = producer(v);
+				if (!step_of(def, type, step) || step.op != steps[k].op ||
+					normalize_integer(type, body.literals[step.literal.index]).low !=
+						normalize_integer(type, body.literals[steps[k].literal.index]).low)
+					return false;
+				v = resolve(def->ops[0]);
+			}
+			uint64_t delta = 0, from_v, from_x;
+			for (; k < steps.size(); ++k)
+			{
+				const uint64_t by = normalize_integer(type, body.literals[steps[k].literal.index]).low;
+				delta += steps[k].op == BinaryOp::Add ? by : 0 - by;
+			}
+			const Value base_v = affine(v, from_v), base_x = affine(x, from_x);
+			return base_v == base_x && ((from_v - from_x - delta) & mask) == 0;
+		};
+		// The other phi's input from the predecessor of this phi's pair `k`.
+		const auto input_of = [&](const Instruction& other, uint32_t k) {
+			for (uint32_t j = 0; j < other.extra_count; j += 2)
+				if (body.operands[other.extra_first + j].index == body.operands[phi.extra_first + k].index)
+					return resolve(body.operands[other.extra_first + j + 1]);
+			return Value::none();
+		};
+		// Each input read by this phi alone; the chain from the first that
+		// reaches, a step at a time, what another phi takes there.
+		bool sole = true;
+		for (uint32_t k = 1; k < phi.extra_count && sole; k += 2)
+		{
+			const Value in = resolve(body.operands[phi.extra_first + k]);
+			sole = !in.is(ValueKind::Temp) || (in.index < uses.size() && uses[in.index] == 1);
+		}
+		InstId source = kNoId, last = kNoId, prev = kNoId;
+		for (uint32_t k = 0; k < phi.extra_count && sole && source == kNoId; k += 2)
+		{
+			Value v = resolve(body.operands[phi.extra_first + k + 1]);
+			steps.clear();
+			Step step;
+			while (source == kNoId && steps.size() < kDerivedSteps && step_of(producer(v), type, step))
+			{
+				steps.push_back(step);
+				v = resolve(producer(v)->ops[0]);
+				unsigned seen = 0;
+				for (InstId i = body.blocks[block].first;
+					i != kNoId && body.instructions[i].op == Opcode::Phi && seen < kDerivedPhis && source == kNoId;
+					i = body.instructions[i].next, ++seen)
+				{
+					const Instruction& other = body.instructions[i];
+					if (i == id || !(other.type == type) || other.extra_count != phi.extra_count ||
+						!replacements[other.result].is(ValueKind::None) || !(input_of(other, k) == v))
+						continue;
+					bool all = true;
+					for (uint32_t j = 0; j < phi.extra_count && all; j += 2)
+						all = derives(resolve(body.operands[phi.extra_first + j + 1]), input_of(other, j));
+					if (all)
+						source = i;
+				}
+			}
+		}
+		if (source == kNoId)
+			continue;
+		for (InstId i = body.blocks[block].first; i != kNoId && body.instructions[i].op == Opcode::Phi;
+			i = body.instructions[i].next)
+		{
+			prev = i == id ? last : prev;
+			last = i;
+		}
+		for (uint32_t k = 1; k < phi.extra_count; k += 2)
+		{
+			const Value old = resolve(body.operands[phi.extra_first + k]);
+			if (old.is(ValueKind::Temp) && uses[old.index] != 0xffffffffu && uses[old.index] != 0)
+				--uses[old.index];
+		}
+		const TempId from = body.instructions[source].result;
+		if (uses[from] != 0xffffffffu)
+			++uses[from];
+		// The phi's instruction becomes the chain's last step, after the
+		// block's phis and the steps before it.
+		unlink_after(body, block, prev, id);
+		InstId after = last == id ? prev : last;
+		Value value = Value::temp(from);
+		for (size_t k = steps.size(); k-- != 0;)
+		{
+			Instruction inst = make_instruction(Opcode::Binary, type);
+			inst.sub = static_cast<uint8_t>(steps[k].op);
+			inst.ops[0] = value;
+			inst.ops[1] = steps[k].literal;
+			inst.location = phi.location;
+			if (k == 0)
+			{
+				inst.result = phi.result;
+				body.instructions[id] = inst;
+				insert_after(body, block, after, id);
+				break;
+			}
+			const InstId at = append_instruction(body, inst);
+			const TempId t = append_temp(body, type, at);
+			body.instructions[at].result = t;
+			insert_after(body, block, after, at);
+			after = at;
+			replacements.resize(body.temps.size(), Value::none());
+			uses.resize(body.temps.size(), 0);
+			uses[t] = 1;
+			value = Value::temp(t);
+		}
+		changed = true;
+	}
+	return changed;
+}
+
 bool diamond_at(const FunctionBody& body, const Cfg& cfg, BlockId head, Diamond& d)
 {
 	const InstId t = body.blocks[head].last;

@@ -69,5 +69,10 @@ bool is_all_ones(lowir::Type type, const lowir::Constant& c);
 // either order (what select formation makes of `v < 0 ? -v : v`). A zero of
 // either sign and an unordered value give no value below zero.
 bool magnitude_below_zero(const lowir::FunctionBody& body, const lowir::Instruction& compare);
+// Rewrites an f32 or f64 operation with a literal as a cheaper one of the
+// same result: a division by a power of two whose reciprocal is exact as a
+// multiplication by it, and a product with two as the value added to itself
+// (`uses`, per temp, counts the read this adds).
+bool cheaper_float_arithmetic(lowir::FunctionBody& body, std::vector<uint32_t>& uses, lowir::Instruction& inst);
 
 } // namespace opt

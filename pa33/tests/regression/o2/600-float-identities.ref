@@ -10,7 +10,7 @@ function @not_kept(%x : f32) -> f32 [binding=strong, no_inline=yes] {
     %b = binary sub f32 %a, -0f
     %c = binary sub f32 0f, %b
     %d = binary div f32 1f, %c
-    %e = binary mul f32 %d, 2f
+    %e = binary add f32 %d, %d
     return f32 %e
 }
 function @main() -> i32 [role=entry] {

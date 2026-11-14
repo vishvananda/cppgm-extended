@@ -279,6 +279,16 @@ bool ties_first_operand(const Instruction& inst)
 		inst.type.kind() != TypeKind::I128;
 }
 
+// A Binary the emitter computes in either operand's register.
+bool commutes(const Instruction& inst)
+{
+	const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(inst.sub);
+	if (op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Mul)
+		return inst.type.is_float() || inst.type.is_integer() || inst.type.is_pointer();
+	return (op == lowir::BinaryOp::And || op == lowir::BinaryOp::Or || op == lowir::BinaryOp::Xor) &&
+		inst.type.is_integer();
+}
+
 // Block-local values live per slot, by class (the registers the
 // emission-time allocator needs besides the function-level values), in
 // the pressure trees.
@@ -839,7 +849,9 @@ void FunctionSelector::collect_uses(const std::vector<int32_t>& index)
 	const lowir::FunctionBody& body = *body_;
 	std::vector<std::pair<uint32_t, int32_t>> uses;
 	std::vector<uint32_t> owner;
-	auto record = [&](Value v, uint32_t b, int32_t early, int32_t late, bool tied) {
+	// (`whole`: the instruction reads every part of a lazy address before it
+	// writes.)
+	auto record = [&](Value v, uint32_t b, int32_t early, int32_t late, bool tied, bool whole = false) {
 		v = resolve(v);
 		if (v.kind != ValueKind::Temp)
 			return;
@@ -851,13 +863,13 @@ void FunctionSelector::collect_uses(const std::vector<int32_t>& index)
 			parts[0] = kNoId;
 			parts[1] = expr.kind == AddrExpr::Temp ? expr.base : kNoId;
 			parts[2] = expr.index;
-			tied = false;
+			tied = whole;
 		}
 		for (unsigned k = 0; k < 3; ++k)
 		{
 			if (parts[k] == kNoId || index[parts[k]] < 0)
 				continue;
-			uses.push_back(std::make_pair(b, tied && k == 0 ? early : late));
+			uses.push_back(std::make_pair(b, tied && (k == 0 || whole) ? early : late));
 			owner.push_back(static_cast<uint32_t>(index[parts[k]]));
 		}
 	};
@@ -892,6 +904,16 @@ void FunctionSelector::collect_uses(const std::vector<int32_t>& index)
 		{
 			record(inst.ops[0], b, early, late, true);
 			record(inst.ops[1], b, early, late, true);
+			return;
+		}
+		// One load into a general register reads its address before it
+		// writes: a pointer read through itself stays in its register. (A
+		// load folded into its consumer is read there, with that one's
+		// operands.)
+		if (inst.op == Opcode::Load && inst.result != kNoId && temps_[inst.result].cls == VClass::Gpr &&
+			pos == pos_[id])
+		{
+			record(inst.ops[0], b, early, late, true, true);
 			return;
 		}
 		// A cmov keeps either arm in place: an arm dying there may be the
@@ -1641,30 +1663,39 @@ void FunctionSelector::emission_facts()
 	for (uint32_t b = 0; b < n; ++b)
 		block_globals_first_[b + 1] += block_globals_first_[b];
 	// A block-local value flowing into a phi with a register is hinted to
-	// that register, and so is each first operand it is computed from that
-	// dies there: the edge transfer then moves nothing.
-	for (uint32_t b = 0; b < n; ++b)
-	{
-		if (!blocks_[b].reachable)
-			continue;
-		const lowir::BlockId from = blocks_[b].id;
-		for (uint32_t k = succ_first_[b]; k < succ_first_[b + 1]; ++k)
+	// that register, and so is each operand it is computed from that dies
+	// there: the edge transfer then moves nothing. The edges a block usually
+	// leaves by come first -- its only edge, or a loop's back edge -- and
+	// their hints are firm: the value takes the phi's register, when free,
+	// before a dying operand's (the copy the transfer would make is made at
+	// the definition instead, and the register it leaves serves the next
+	// value: transfers that form a cycle would cost one more copy each).
+	for (unsigned usual = 2; usual-- != 0;)
+		for (uint32_t b = 0; b < n; ++b)
 		{
-			const lowir::BlockId to = blocks_[succs_[k]].id;
-			for (lowir::InstId i = body.blocks[to].first; i != kNoId; i = body.instructions[i].next)
+			if (!blocks_[b].reachable)
+				continue;
+			const lowir::BlockId from = blocks_[b].id;
+			const bool only = succ_first_[b + 1] - succ_first_[b] == 1;
+			for (uint32_t k = succ_first_[b]; k < succ_first_[b + 1]; ++k)
 			{
-				const Instruction& phi = body.instructions[i];
-				if (phi.op != Opcode::Phi)
-					break;
-				const Reg reg = temps_[phi.result].greg;
-				if (reg == kNoReg || !live(i) || phi.extra_count > 16)
+				if ((only || succs_[k] <= b) != (usual != 0))
 					continue;
-				for (uint32_t a = 0; a + 1 < phi.extra_count; a += 2)
-					if (body.operands[phi.extra_first + a].index == from)
-						hint_chain(resolve(body.operands[phi.extra_first + a + 1]), b, reg);
+				const lowir::BlockId to = blocks_[succs_[k]].id;
+				for (lowir::InstId i = body.blocks[to].first; i != kNoId; i = body.instructions[i].next)
+				{
+					const Instruction& phi = body.instructions[i];
+					if (phi.op != Opcode::Phi)
+						break;
+					const Reg reg = temps_[phi.result].greg;
+					if (reg == kNoReg || !live(i) || phi.extra_count > 16)
+						continue;
+					for (uint32_t a = 0; a + 1 < phi.extra_count; a += 2)
+						if (body.operands[phi.extra_first + a].index == from)
+							hint_chain(resolve(body.operands[phi.extra_first + a + 1]), b, reg, usual != 0);
+				}
 			}
 		}
-	}
 	// A value allocated while emitting -- a block-local value, or the register
 	// copy a value left in its frame home keeps in its defining block -- may
 	// not take the register of a function-level value defined inside its
@@ -1798,9 +1829,10 @@ bool FunctionSelector::computed_from(uint32_t g, uint32_t from) const
 }
 
 // Hints `reg` to block-local value v of block b and, through each
-// Binary/Unary first operand that dies at its use, to the values it is
-// computed from (a bounded chain).
-void FunctionSelector::hint_chain(Value v, uint32_t b, Reg reg)
+// Binary/Unary first operand that dies at its use (a commutative Binary's
+// second when its first does not), to the values it is computed from (a
+// bounded chain). A `firm` hint is taken before a dying operand's register.
+void FunctionSelector::hint_chain(Value v, uint32_t b, Reg reg, bool firm)
 {
 	const lowir::FunctionBody& body = *body_;
 	for (unsigned step = 0; step < 8 && v.kind == ValueKind::Temp; ++step)
@@ -1811,6 +1843,7 @@ void FunctionSelector::hint_chain(Value v, uint32_t b, Reg reg)
 			t.block != b || t.hint != kNoReg || v.index < body.parameter_count || (t.cls == VClass::Xmm) != is_xmm(reg))
 			return;
 		t.hint = reg;
+		t.firm_hint = firm;
 		const lowir::InstId def = body.temps[v.index].def;
 		if (def == kNoId)
 			return;
@@ -1832,6 +1865,10 @@ void FunctionSelector::hint_chain(Value v, uint32_t b, Reg reg)
 			u = resolve(computed.ops[0]);
 		}
 		if (u.kind == ValueKind::Temp && (temps_[u.index].flags & TF_FOLDED) && computed.op == Opcode::Binary)
+			u = resolve(computed.ops[1]);
+		// (The result of a commutative operation takes whichever operand's register dies.)
+		else if (computed.op == Opcode::Binary && commutes(computed) &&
+			(u.kind != ValueKind::Temp || temps_[u.index].last != pos_[def] || (temps_[u.index].flags & TF_GLOBAL)))
 			u = resolve(computed.ops[1]);
 		if (u.kind != ValueKind::Temp || temps_[u.index].last != pos_[def])
 			return;

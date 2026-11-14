@@ -180,7 +180,6 @@ private:
 	bool project_or(BlockId block, InstId& prev, InstId id);
 	bool unsigned_division(Instruction& inst);
 	bool even_product_halved(Instruction& inst);
-	bool exact_reciprocal(Instruction& inst);
 	void canonicalize(Instruction& inst);
 	bool narrow_compare(Instruction& inst);
 	bool exact_compare(Instruction& inst);
@@ -1894,7 +1893,9 @@ bool Simplifier::unsigned_division(Instruction& inst)
 		!integer_bits(inst.type, c, bits) || bits.high != 0 || bits.low < 2 || (bits.low & (bits.low - 1)) != 0)
 		return false;
 	const uint64_t sign = static_cast<uint64_t>(1) << (8 * storage_bytes(inst.type) - 1);
-	if (bits.low >= sign || (possible_bits(inst.ops[0], inst.type) & sign) != 0)
+	if (bits.low >= sign ||
+		((possible_bits(inst.ops[0], inst.type) & sign) != 0 &&
+			!tested_not_negative(c_, current_block_, resolve(inst.ops[0]))))
 		return false;
 	unsigned shift = 0;
 	while ((static_cast<uint64_t>(1) << shift) != bits.low)
@@ -1934,28 +1935,6 @@ bool Simplifier::even_product_halved(Instruction& inst)
 	inst.sub = static_cast<uint8_t>(BinaryOp::Shr);
 	inst.ops[1] = integer_value(body_, Literal{ 1, 0 });
 	inst.flags = static_cast<decltype(inst.flags)>((inst.flags & ~IF_NO_WRAP) | IF_EXACT);
-	return true;
-}
-
-// A floating division by a power of two whose reciprocal is exact is a
-// multiplication by it: the same real result, rounded the same, far cheaper.
-bool Simplifier::exact_reciprocal(Instruction& inst)
-{
-	const TypeKind kind = inst.type.kind();
-	if (inst.op != Opcode::Binary || static_cast<BinaryOp>(inst.sub) != BinaryOp::Div ||
-		(kind != TypeKind::F32 && kind != TypeKind::F64) || !inst.ops[1].is(ValueKind::Float) ||
-		inst.ops[1].float_kind != kind)
-		return false;
-	const unsigned fraction = kind == TypeKind::F32 ? 23 : 52;
-	const uint64_t top = kind == TypeKind::F32 ? 0xff : 0x7ff;
-	const uint64_t bits = body_.literals[inst.ops[1].index].low;
-	const uint64_t exponent = (bits >> fraction) & top;
-	if ((bits & ((static_cast<uint64_t>(1) << fraction) - 1)) != 0 || exponent == 0 || exponent >= top - 1)
-		return false;
-	const uint64_t sign = bits & (static_cast<uint64_t>(1) << (fraction + (kind == TypeKind::F32 ? 8 : 11)));
-	const Literal inverse = { sign | ((top - 1 - exponent) << fraction), 0 };
-	inst.sub = static_cast<uint8_t>(BinaryOp::Mul);
-	inst.ops[1] = literal_value(body_, ValueKind::Float, kind, inverse);
 	return true;
 }
 
@@ -2993,6 +2972,12 @@ void Simplifier::process_block(BlockId block)
 	if (c_.level >= 1 && head != kNoId && body_.instructions[head].op == Opcode::Phi &&
 		convert_matching_phis(c_, block, repl_, uses_))
 		changed_ = true;
+	if (c_.level >= 1 && head != kNoId && body_.instructions[head].op == Opcode::Phi &&
+		derive_matching_phis(c_, block, repl_, uses_))
+	{
+		grow_facts();
+		changed_ = true;
+	}
 	for (InstId i = body_.blocks[block].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
 		i = body_.instructions[i].next)
 		++phis;
@@ -3119,9 +3104,9 @@ void Simplifier::process_block(BlockId block)
 			simplify_field_step(body_, uses_, *this, inst))
 			changed_ = true;
 		if ((inst.op == Opcode::Binary && reassociate(inst)) || narrow_truncation(inst) || mask_or(inst) ||
-			packed_part(inst) || unsigned_division(inst) || even_product_halved(inst) || exact_reciprocal(inst) ||
-			merge_index(inst) || narrow_compare(inst) || exact_compare(inst) || bulk_call(inst) ||
-			readonly_table_address(inst))
+			packed_part(inst) || unsigned_division(inst) || even_product_halved(inst) ||
+			cheaper_float_arithmetic(body_, uses_, inst) || merge_index(inst) || narrow_compare(inst) ||
+			exact_compare(inst) || bulk_call(inst) || readonly_table_address(inst))
 			changed_ = true;
 		Value value;
 		if (inst.result != kNoId && (fold(inst, value) || identity(inst, value)))

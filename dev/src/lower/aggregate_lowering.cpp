@@ -1770,16 +1770,19 @@ bool FunctionLowering::copy_members(const sema::Type* type, lowir::Value source,
 	to.storage = destination;
 	const lowir::Value base_from = address_of(from);
 	const lowir::Value base_to = address_of(to);
+	// Every member is read before one is written: the two objects are one
+	// object or apart (C++11 5.17p8), so the order does not show, and the
+	// optimizer joins the moves of adjacent members with no proof of that.
+	std::vector<RValue> values;
 	for (const MovedField& field : fields)
 	{
-		from.storage = base_from;
-		to.storage = base_to;
-		if (field.offset != 0)
-		{
-			from.storage = field_address(base_from, field.offset);
-			to.storage = field_address(base_to, field.offset);
-		}
-		store(field.type, load(field.type, from), to);
+		from.storage = field.offset != 0 ? field_address(base_from, field.offset) : base_from;
+		values.push_back(load(field.type, from));
+	}
+	for (size_t k = 0; k < fields.size(); ++k)
+	{
+		to.storage = fields[k].offset != 0 ? field_address(base_to, fields[k].offset) : base_to;
+		store(fields[k].type, values[k], to);
 	}
 	return true;
 }

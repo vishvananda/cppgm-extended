@@ -1,0 +1,88 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @orbit
+  abi
+    param %cr -> xmm0 : f64
+    param %ci -> xmm1 : f64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.f64 <xmm0>, xmm0
+    fmov.f64 <xmm1>, xmm1
+    mov rax, 0
+    fmov.f64 <xmm2>, 0.0
+    fmov.f64 <xmm3>, 0.0
+    fmov.f64 xmm0, 0.0
+    fmov.f64 xmm1, 0.0
+
+  block ^head
+    fadd.f64 <xmm4>, xmm1, xmm0
+    fcmp.f64 4.0, <xmm4>
+    jb ^done
+
+  block ^body
+    fadd.f64 <xmm2>, <xmm2>, <xmm2>
+    fmul.f64 <xmm3>, <xmm2>, <xmm3>
+    fadd.f64 <xmm3>, <xmm1>, <xmm3>
+    fsub.f64 <xmm2>, xmm0, xmm1
+    fadd.f64 <xmm2>, <xmm0>, <xmm2>
+    fmul.f64 xmm0, <xmm2>, <xmm2>
+    fmul.f64 xmm1, <xmm3>, <xmm3>
+    add rax, 1
+    cmp.i64 rax, 50
+    jl ^head
+    ret rax
+
+  block ^body~done
+    ret rax
+
+  block ^head~done
+    ret rax
+
+  block ^done
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1>
+
+  block ^entry
+    fmov.f64 xmm0, 0.0
+    fmov.f64 xmm1, 0.0
+    call @orbit [args=(xmm0,xmm1)]
+    mov <gpr0>, rax
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 2.0
+    call @orbit [args=(xmm0,xmm1)]
+    mov <gpr1>, rax
+    fmov.f64 xmm0, 0.5
+    fmov.f64 xmm1, 0.5
+    call @orbit [args=(xmm0,xmm1)]
+    cmp.i64 <gpr0>, 50
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    cmp.i64 <gpr1>, 1
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    cmp.i64 rax, 5
+    setne rax
+    movzx rax, rax
+    or <gpr0>, <gpr1>
+    or rax, <gpr0>
+    ret rax

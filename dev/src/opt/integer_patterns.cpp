@@ -935,6 +935,87 @@ bool simplify_field_step(
 	return patterns.field_step(instruction);
 }
 
+bool tested_not_negative(const FunctionContext& context, BlockId block, Value v)
+{
+	// The most dominators read for one value.
+	constexpr unsigned kTestedDominators = 8;
+	const FunctionBody& body = context.body;
+	const Cfg& cfg = context.cfg;
+	if (!v.is(ValueKind::Temp) || block >= cfg.idom.size())
+		return false;
+	const Type type = body.temps[v.index].type;
+	if (!type.is_integer() || type.kind() == TypeKind::I1 || type.kind() == TypeKind::I128)
+		return false;
+	const unsigned spare = 64 - lowir::integer_bits(type.kind());
+	const auto signed_literal = [&](Value k, int64_t& out) {
+		if (!k.is(ValueKind::Integer))
+			return false;
+		out = static_cast<int64_t>(body.literals[k.index].low << spare) >> spare;
+		return true;
+	};
+	// The value v is one less than.
+	Value above = Value::none();
+	if (v.index >= body.parameter_count && body.temps[v.index].def != kNoId)
+	{
+		const Instruction& def = body.instructions[body.temps[v.index].def];
+		int64_t step;
+		if (def.op == Opcode::Binary && def.type == type && signed_literal(def.ops[1], step) &&
+			((static_cast<BinaryOp>(def.sub) == BinaryOp::Sub && step == 1) ||
+				(static_cast<BinaryOp>(def.sub) == BinaryOp::Add && step == -1)))
+			above = def.ops[0];
+	}
+	for (unsigned up = 0; up < kTestedDominators && block != kNoId; ++up, block = cfg.idom[block])
+	{
+		if (cfg.pred_count(block) != 1)
+			continue;
+		const BlockId from = cfg.preds[cfg.pred_first[block]];
+		const InstId last = body.blocks[from].last;
+		if (last == kNoId || body.instructions[last].op != Opcode::Branch)
+			continue;
+		const Instruction& branch = body.instructions[last];
+		if (!branch.ops[0].is(ValueKind::Temp) || branch.ops[1].index == branch.ops[2].index ||
+			(branch.ops[1].index != block && branch.ops[2].index != block) ||
+			branch.ops[0].index < body.parameter_count || body.temps[branch.ops[0].index].def == kNoId)
+			continue;
+		const Instruction& test = body.instructions[body.temps[branch.ops[0].index].def];
+		int64_t bound;
+		if (test.op != Opcode::Compare || !(test.type == type) || !signed_literal(test.ops[1], bound))
+			continue;
+		ComparePredicate held = static_cast<ComparePredicate>(test.sub);
+		if (branch.ops[1].index != block)
+			held = inverted(held);
+		// x > bound, or x >= bound: x is at least `least`.
+		if ((held != ComparePredicate::Gt && held != ComparePredicate::Ge) ||
+			(held == ComparePredicate::Gt && bound == INT64_MAX))
+			continue;
+		const int64_t least = held == ComparePredicate::Gt ? bound + 1 : bound;
+		if ((test.ops[0] == v && least >= 0) || (test.ops[0] == above && least >= 1))
+			return true;
+	}
+	return false;
+}
+
+bool unsign_tested_division(FunctionContext& context, BlockId block, Instruction& inst)
+{
+	FunctionBody& body = context.body;
+	if (inst.op != Opcode::Binary || !inst.type.is_integer() || inst.type.kind() == TypeKind::I128 ||
+		!inst.ops[1].is(ValueKind::Integer))
+		return false;
+	const BinaryOp op = static_cast<BinaryOp>(inst.sub);
+	const Literal by = normalize_integer(inst.type, body.literals[inst.ops[1].index]);
+	const uint64_t sign = static_cast<uint64_t>(1) << (lowir::integer_bits(inst.type.kind()) - 1);
+	if ((op != BinaryOp::Div && op != BinaryOp::Mod) || by.low < 2 || by.low >= sign || (by.low & (by.low - 1)) != 0 ||
+		!tested_not_negative(context, block, inst.ops[0]))
+		return false;
+	unsigned shift = 0;
+	while ((static_cast<uint64_t>(1) << shift) != by.low)
+		++shift;
+	inst.sub = static_cast<uint8_t>(op == BinaryOp::Div ? BinaryOp::UShr : BinaryOp::And);
+	inst.ops[1] = integer_value(body, Literal{ op == BinaryOp::Div ? shift : by.low - 1, 0 });
+	inst.flags = static_cast<decltype(inst.flags)>(inst.flags & ~(IF_EXACT | IF_NO_WRAP));
+	return true;
+}
+
 bool simplify_pointer_distance(FunctionBody& body, IntegerPatternFacts& facts, BlockId block, InstId& prev, InstId id)
 {
 	const Instruction seen = body.instructions[id];

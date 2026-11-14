@@ -101,6 +101,7 @@ struct TempInfo
 	VClass cls = VClass::None;
 	Reg hint = kNoReg;
 	Reg reg = kNoReg;             // current register while emitting
+	bool firm_hint = false;       // the hint comes before a dying operand's register
 	uint32_t forbid = 0;          // registers its local interval may not use
 	Reg greg = kNoReg;            // register of a cross-block value's hull
 	int32_t block_last = -1;      // last use in a block it is retained into

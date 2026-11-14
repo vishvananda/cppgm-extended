@@ -27,39 +27,72 @@ Ranges clip(const Ranges& s, int64_t lo, int64_t hi)
 	return out;
 }
 
+// Ranges in any order, overlapping or not, as the sorted disjoint ranges of
+// their values (adjacent ones as one range).
+void normalize(Ranges& s)
+{
+	if (s.size() < 2)
+		return;
+	std::sort(s.begin(), s.end());
+	size_t last = 0;
+	for (size_t k = 1; k < s.size(); ++k)
+	{
+		if (s[last].second == INT64_MAX || s[k].first <= s[last].second + 1)
+			s[last].second = s[k].second > s[last].second ? s[k].second : s[last].second;
+		else
+			s[++last] = s[k];
+	}
+	s.resize(last + 1);
+}
+
 Ranges unite(const Ranges& a, const Ranges& b)
 {
 	Ranges all(a);
 	all.insert(all.end(), b.begin(), b.end());
-	std::sort(all.begin(), all.end());
-	Ranges out;
-	for (const std::pair<int64_t, int64_t>& r : all)
-	{
-		if (!out.empty() && (out.back().second == INT64_MAX || r.first <= out.back().second + 1))
-			out.back().second = r.second > out.back().second ? r.second : out.back().second;
-		else
-			out.push_back(r);
-	}
-	return out;
+	normalize(all);
+	return all;
 }
 
-// The values of `all` outside `part` (part within all).
+// Whether `s` has the value v.
+bool holds(const Ranges& s, int64_t v)
+{
+	const Ranges::const_iterator after = std::upper_bound(s.begin(), s.end(), std::make_pair(v, INT64_MAX));
+	return after != s.begin() && (after - 1)->second >= v;
+}
+
+// The values of `all` outside `part` (part within all): one walk of the
+// two, as part's gaps rise with all's ranges.
 Ranges subtract(const Ranges& all, const Ranges& part, int64_t tmin, int64_t tmax)
 {
 	Ranges out;
+	size_t at = 0;
+	const auto keep = [&](int64_t from, int64_t to) {
+		while (at < all.size() && all[at].second < from)
+			++at;
+		for (size_t k = at; k < all.size() && all[k].first <= to; ++k)
+		{
+			const int64_t a = all[k].first > from ? all[k].first : from, b = all[k].second < to ? all[k].second : to;
+			if (a > b)
+				continue;
+			if (!out.empty() && (out.back().second == INT64_MAX || a <= out.back().second + 1))
+				out.back().second = b > out.back().second ? b : out.back().second;
+			else
+				out.push_back(std::make_pair(a, b));
+		}
+	};
 	int64_t from = tmin;
 	bool open = true;
 	for (const std::pair<int64_t, int64_t>& p : part)
 	{
 		if (p.first > from)
-			out = unite(out, clip(all, from, p.first - 1));
+			keep(from, p.first - 1);
 		open = p.second != tmax;
 		if (!open)
 			break;
 		from = p.second + 1;
 	}
 	if (open)
-		out = unite(out, clip(all, from, tmax));
+		keep(from, tmax);
 	return out;
 }
 
@@ -227,9 +260,10 @@ Ranges roots_of(const std::vector<Piece>& pieces, const Ranges& derived)
 // i64, `pointer` set): a branch on a compare with a literal, of it or of a
 // value a chain of extensions and constant additions derives from it
 // (`yes`: its values the branch takes), or a switch on either (`cases`:
-// its value per case, in case order); `cost` the compares it stands for (a
-// switch's runs of consecutive values per target). `hoist`: the chain's
-// instructions in the test's own block.
+// its value per case, in case order, and `decides`: whether the case is the
+// first of its value); `cost` the compares it stands for (a switch's runs
+// of consecutive values per target). `hoist`: the chain's instructions in
+// the test's own block.
 struct Test
 {
 	TempId x;
@@ -239,6 +273,7 @@ struct Test
 	bool is_switch;
 	Ranges yes;
 	std::vector<std::pair<int64_t, BlockId>> cases;
+	std::vector<uint8_t> decides;
 	std::vector<InstId> hoist;
 	BlockId on_true;
 	BlockId on_false;
@@ -265,9 +300,11 @@ private:
 	bool root_of(TempId x, TempId& root, std::vector<Piece>& pieces, std::vector<InstId>& links) const;
 	bool only_links(
 		BlockId block, bool head, InstId test, const std::vector<InstId>& links, std::vector<InstId>& hoist) const;
-	void sides(const Test& test, const Ranges& entry, int64_t tmin, int64_t tmax,
-		std::vector<std::pair<BlockId, Ranges>>& out) const;
+	template<class Take>
+	bool sides(const Test& test, const Ranges& entry, int64_t tmin, int64_t tmax, Take take) const;
 	bool form(BlockId head);
+	bool spread(const std::vector<BlockId>& region, const std::vector<Test>& tests, const std::vector<size_t>& order,
+		std::vector<std::pair<BlockId, Ranges>>& exits, uint32_t& replaced);
 	bool form_region(const std::vector<BlockId>& region, const std::vector<Test>& tests);
 	bool reroot(const Test& test);
 
@@ -275,6 +312,7 @@ private:
 	FunctionBody& body_;
 	Cfg& cfg_;
 	std::vector<uint8_t> consumed_; // per block: inside a formed switch
+	std::vector<uint32_t> exit_at_; // per block: its place among a region's targets, plus one
 };
 
 // x's root: x without the extensions (from no wider a type) and additions
@@ -449,6 +487,24 @@ bool SwitchFormer::switch_of(BlockId block, bool head, Test& test) const
 	}
 	std::stable_sort(cases.begin(), cases.end(),
 		[](const std::pair<int64_t, BlockId>& a, const std::pair<int64_t, BlockId>& b) { return a.first < b.first; });
+	// A repeated value: its first case decides (cases in rising order
+	// repeat none).
+	test.decides.assign(test.cases.size(), 1);
+	bool rising = true;
+	for (size_t k = 1; k < test.cases.size() && rising; ++k)
+		rising = test.cases[k - 1].first < test.cases[k].first;
+	if (!rising)
+	{
+		std::vector<uint32_t> by_value(test.cases.size());
+		for (uint32_t k = 0; k < by_value.size(); ++k)
+			by_value[k] = k;
+		std::sort(by_value.begin(), by_value.end(), [&](uint32_t a, uint32_t b) {
+			return test.cases[a].first != test.cases[b].first ? test.cases[a].first < test.cases[b].first : a < b;
+		});
+		for (size_t k = 1; k < by_value.size(); ++k)
+			if (test.cases[by_value[k]].first == test.cases[by_value[k - 1]].first)
+				test.decides[by_value[k]] = 0;
+	}
 	test.type = body_.temps[test.x].type;
 	test.pointer = false;
 	test.term = last;
@@ -462,27 +518,31 @@ bool SwitchFormer::switch_of(BlockId block, bool head, Test& test) const
 	return true;
 }
 
-// The values each successor of a test receives of `entry`.
-void SwitchFormer::sides(
-	const Test& t, const Ranges& entry, int64_t tmin, int64_t tmax, std::vector<std::pair<BlockId, Ranges>>& out) const
+// The values each successor of a test receives of `entry`: `take` reads a
+// successor and its values, a switch's cases in their order and then its
+// default, and ends the walk by returning false (the result).
+template<class Take>
+bool SwitchFormer::sides(const Test& t, const Ranges& entry, int64_t tmin, int64_t tmax, Take take) const
 {
-	out.clear();
-	if (t.is_switch)
+	if (!t.is_switch)
 	{
-		Ranges taken;
-		for (const std::pair<int64_t, BlockId>& c : t.cases)
-		{
-			// A repeated value: its first case decides.
-			const Ranges one = subtract(clip(entry, c.first, c.first), taken, tmin, tmax);
-			taken = unite(taken, one);
-			out.push_back(std::make_pair(c.second, one));
-		}
-		out.push_back(std::make_pair(t.on_false, subtract(entry, taken, tmin, tmax)));
-		return;
+		const Ranges yes = intersect(entry, t.yes);
+		return take(t.on_true, yes) && take(t.on_false, subtract(entry, yes, tmin, tmax));
 	}
-	const Ranges yes = intersect(entry, t.yes);
-	out.push_back(std::make_pair(t.on_true, yes));
-	out.push_back(std::make_pair(t.on_false, subtract(entry, yes, tmin, tmax)));
+	Ranges one, taken;
+	for (size_t k = 0; k < t.cases.size(); ++k)
+	{
+		one.clear();
+		if (t.decides[k] && holds(entry, t.cases[k].first))
+		{
+			one.push_back(std::make_pair(t.cases[k].first, t.cases[k].first));
+			taken.push_back(one[0]);
+		}
+		if (!take(t.cases[k].second, one))
+			return false;
+	}
+	normalize(taken);
+	return take(t.on_false, subtract(entry, taken, tmin, tmax));
 }
 
 // The blocks after `head` that test its value, reached only from among
@@ -557,12 +617,59 @@ bool SwitchFormer::reroot(const Test& test)
 	return true;
 }
 
+// The values each target outside the region takes from the region's tests
+// (`exits`, in the order the tests reach the targets), read in the order
+// `order` of the region's blocks, and the compares the tests stand for.
+// False when a test leads back to the head or to no later block of the
+// region. A value set gathers its parts as they come, and takes its form
+// when its block's turn comes, or at the end.
+bool SwitchFormer::spread(const std::vector<BlockId>& region, const std::vector<Test>& tests,
+	const std::vector<size_t>& order, std::vector<std::pair<BlockId, Ranges>>& exits, uint32_t& replaced)
+{
+	const BlockId head = region[0];
+	int64_t tmin = 0, tmax = 0;
+	bounds_of(tests[0].type.kind(), tmin, tmax);
+	std::vector<Ranges> entry(region.size());
+	entry[0] = Ranges(1, std::make_pair(tmin, tmax));
+	replaced = 0;
+	for (size_t o = 0; o < order.size(); ++o)
+	{
+		const size_t r = order[o];
+		replaced += tests[r].cost;
+		normalize(entry[r]);
+		const bool whole = sides(tests[r], entry[r], tmin, tmax, [&](BlockId to, const Ranges& values) {
+			if (to == head)
+				return false;
+			const std::vector<BlockId>::const_iterator at = std::find(region.begin(), region.end(), to);
+			if (at != region.end())
+			{
+				if (cfg_.rpo_index[to] <= cfg_.rpo_index[region[r]])
+					return false;
+				Ranges& into = entry[static_cast<size_t>(at - region.begin())];
+				into.insert(into.end(), values.begin(), values.end());
+				return true;
+			}
+			if (exit_at_[to] == 0)
+			{
+				exits.push_back(std::make_pair(to, Ranges()));
+				exit_at_[to] = static_cast<uint32_t>(exits.size());
+			}
+			Ranges& into = exits[exit_at_[to] - 1].second;
+			into.insert(into.end(), values.begin(), values.end());
+			return true;
+		});
+		if (!whole)
+			return false;
+	}
+	for (std::pair<BlockId, Ranges>& exit : exits)
+		normalize(exit.second);
+	return true;
+}
+
 bool SwitchFormer::form_region(const std::vector<BlockId>& region, const std::vector<Test>& tests)
 {
 	const BlockId head = region[0];
 	const Test& first = tests[0];
-	int64_t tmin = 0, tmax = 0;
-	bounds_of(first.type.kind(), tmin, tmax);
 	auto inside = [&](BlockId b) { return std::find(region.begin(), region.end(), b) != region.end(); };
 	// Value sets in reverse postorder (an edge back into the region: none).
 	std::vector<size_t> order(region.size());
@@ -570,37 +677,13 @@ bool SwitchFormer::form_region(const std::vector<BlockId>& region, const std::ve
 		order[r] = r;
 	std::sort(order.begin(), order.end(),
 		[&](size_t a, size_t b) { return cfg_.rpo_index[region[a]] < cfg_.rpo_index[region[b]]; });
-	std::vector<Ranges> entry(region.size());
-	entry[0] = Ranges(1, std::make_pair(tmin, tmax));
 	std::vector<std::pair<BlockId, Ranges>> exits;
-	std::vector<std::pair<BlockId, Ranges>> out;
 	uint32_t replaced = 0;
-	for (size_t o = 0; o < order.size(); ++o)
-	{
-		const size_t r = order[o];
-		replaced += tests[r].cost;
-		sides(tests[r], entry[r], tmin, tmax, out);
-		for (const std::pair<BlockId, Ranges>& side : out)
-		{
-			if (side.first == head)
-				return false;
-			const std::vector<BlockId>::const_iterator at = std::find(region.begin(), region.end(), side.first);
-			if (at != region.end())
-			{
-				const size_t to = static_cast<size_t>(at - region.begin());
-				if (cfg_.rpo_index[side.first] <= cfg_.rpo_index[region[r]])
-					return false;
-				entry[to] = unite(entry[to], side.second);
-				continue;
-			}
-			size_t e = 0;
-			while (e < exits.size() && exits[e].first != side.first)
-				++e;
-			if (e == exits.size())
-				exits.push_back(std::make_pair(side.first, Ranges()));
-			exits[e].second = unite(exits[e].second, side.second);
-		}
-	}
+	const bool whole = spread(region, tests, order, exits, replaced);
+	for (const std::pair<BlockId, Ranges>& exit : exits)
+		exit_at_[exit.first] = 0;
+	if (!whole)
+		return false;
 	// The default: the most values; ties to the target whose own runs are
 	// the most.
 	size_t def = exits.size();
@@ -787,6 +870,7 @@ bool SwitchFormer::run()
 	c_.entry_uses(form_switches);
 	c_.entry_block_of(form_switches);
 	consumed_.assign(body_.blocks.size(), 0);
+	exit_at_.assign(body_.blocks.size(), 0);
 	bool changed = false;
 	const std::vector<BlockId> rpo = cfg_.rpo;
 	for (BlockId b : rpo)

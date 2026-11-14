@@ -22,26 +22,18 @@ function @captured_value(%source : ptr) -> i64 [no_inline=yes] {
   block ^entry:
     %destination = addr $out
     call void @capture(%destination)
-    %a = load u32 %source
-    %next = index u32 %source, 1
-    %b = load u32 %next
-    store u32 %a, %destination
-    %high = index i8 %destination, 4
-    store u32 %b, %high
-    %t6 = load i64 $out
-    return i64 %t6
+    %t2 = load i64 %source
+    store i64 %t2, %destination
+    %t3 = load i64 $out
+    return i64 %t3
 }
 function @returned_address(%source : ptr) -> ptr [no_inline=yes] {
   slot $out : obj<8x4>
 
   block ^entry:
     %destination = addr $out
-    %a = load u32 %source
-    %next = index u32 %source, 1
-    %b = load u32 %next
-    store u32 %a, %destination
-    %high = index i8 %destination, 4
-    store u32 %b, %high
+    %t2 = load i64 %source
+    store i64 %t2, %destination
     return ptr %destination
 }
 function @volatile_value(%source : ptr) -> i64 [no_inline=yes] {

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <unordered_map>
 
 #include "lowir/builder.h"
 #include "opt/passes.h"
@@ -198,49 +199,101 @@ int decided_by(const ValueSet& f, const ValueSet& q)
 	return all ? 1 : none ? 0 : -1;
 }
 
-// The values of `bits` width switch `sw` sends to `to`: its cases for
-// `to`, or when `to` is the default every value but the other targets'
-// cases (lost past four intervals, or with a case not literal).
-ValueSet switched_to(const FunctionBody& body, const Instruction& sw, BlockId to, unsigned bits)
+// The values of `bits` width a switch sends to each of its targets: a
+// target's cases, or for the default every value but the other targets'
+// cases (lost past four intervals, or with a case not literal). The cases
+// are read once for all the targets, and again when the switch no longer
+// has the cases read (`current`): a switch of n cases asked once for each
+// target would else be read n times.
+struct SwitchValues
 {
-	const uint64_t max = ones(bits);
-	const bool by_default = sw.ops[1].index == to;
-	std::vector<uint64_t> keys;
-	ValueSet s;
-	for (uint32_t k = 0; k + 1 < sw.extra_count; k += 2)
+	uint32_t checked = 0; // the edit count `current` last held at (JumpThreading::edits_)
+	unsigned bits = 0;
+	BlockId fallback = kNoId;
+	std::vector<Value> cases; // the switch's operands as read
+	bool lost = false;
+	std::vector<std::pair<BlockId, uint64_t>> keys; // (target, value) in rising order, each once
+	ValueSet otherwise;                             // the default's values
+
+	bool current(const FunctionBody& body, const Instruction& sw, unsigned width) const
 	{
-		const Value key = body.operands[sw.extra_first + k];
-		if (!key.is(ValueKind::Integer))
-		{
-			s.lost = true;
-			return s;
-		}
-		if ((body.operands[sw.extra_first + k + 1].index == to) != by_default)
-			keys.push_back(body.literals[key.index].low & max);
+		return bits == width && fallback == sw.ops[1].index && cases.size() == sw.extra_count &&
+			std::equal(cases.begin(), cases.end(), body.operands.begin() + sw.extra_first);
 	}
+	void read(const FunctionBody& body, const Instruction& sw, unsigned width);
+	ValueSet to(BlockId target) const;
+	// Whether the switch has an edge to `target`.
+	bool reaches(BlockId target) const
+	{
+		if (target == fallback)
+			return true;
+		if (!lost)
+		{
+			const std::vector<std::pair<BlockId, uint64_t>>::const_iterator at = std::lower_bound(
+				keys.begin(), keys.end(), std::make_pair(target, static_cast<uint64_t>(0)));
+			return at != keys.end() && at->first == target;
+		}
+		for (size_t k = 1; k < cases.size(); k += 2)
+			if (cases[k].index == target)
+				return true;
+		return false;
+	}
+};
+
+void SwitchValues::read(const FunctionBody& body, const Instruction& sw, unsigned width)
+{
+	bits = width;
+	fallback = sw.ops[1].index;
+	cases.assign(body.operands.begin() + sw.extra_first, body.operands.begin() + sw.extra_first + sw.extra_count);
+	lost = false;
+	keys.clear();
+	otherwise = ValueSet();
+	const uint64_t max = ones(bits);
+	for (size_t k = 0; k + 1 < cases.size() && !lost; k += 2)
+	{
+		lost = !cases[k].is(ValueKind::Integer);
+		if (!lost)
+			keys.push_back(std::make_pair(cases[k + 1].index, body.literals[cases[k].index].low & max));
+	}
+	if (lost)
+		return;
 	std::sort(keys.begin(), keys.end());
 	keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
-	if (!by_default)
-	{
-		for (size_t i = 0; i < keys.size();)
-		{
-			size_t j = i;
-			while (j + 1 < keys.size() && keys[j + 1] == keys[j] + 1)
-				++j;
-			s.add(keys[i], keys[j]);
-			i = j + 1;
-		}
-		return s;
-	}
+	std::vector<uint64_t> others;
+	for (const std::pair<BlockId, uint64_t>& key : keys)
+		if (key.first != fallback)
+			others.push_back(key.second);
+	std::sort(others.begin(), others.end());
+	others.erase(std::unique(others.begin(), others.end()), others.end());
 	uint64_t from = 0;
-	for (uint64_t key : keys)
+	for (uint64_t key : others)
 	{
 		if (key > from)
-			s.add(from, key - 1);
+			otherwise.add(from, key - 1);
 		from = key + 1;
 	}
-	if (keys.empty() || keys.back() < max)
-		s.add(from, max);
+	if (others.empty() || others.back() < max)
+		otherwise.add(from, max);
+}
+
+ValueSet SwitchValues::to(BlockId target) const
+{
+	ValueSet s;
+	s.lost = lost;
+	if (lost)
+		return s;
+	if (target == fallback)
+		return otherwise;
+	std::vector<std::pair<BlockId, uint64_t>>::const_iterator at = std::lower_bound(
+		keys.begin(), keys.end(), std::make_pair(target, static_cast<uint64_t>(0)));
+	while (at != keys.end() && at->first == target)
+	{
+		std::vector<std::pair<BlockId, uint64_t>>::const_iterator last = at;
+		while (last + 1 != keys.end() && (last + 1)->first == target && (last + 1)->second == last->second + 1)
+			++last;
+		s.add(at->second, last->second);
+		at = last + 1;
+	}
 	return s;
 }
 
@@ -292,6 +345,24 @@ private:
 	bool demote_phis(BlockId s, std::vector<std::pair<BlockId, BlockId>>& redirects);
 	bool copy_thread(BlockId s, InstId tail, std::vector<std::pair<BlockId, BlockId>>& redirects);
 	bool edge_fact(BlockId cur, BlockId to, Value& cx, ValueSet& f, unsigned& bits) const;
+	// The value sets of the switch that is instruction `id`. known_compares
+	// and dominating_facts edit a switch only in the steps that count
+	// themselves in `edits_`: while one of them runs (`counted_`), a switch
+	// read at the present count has the cases read. Elsewhere each use
+	// compares the cases.
+	const SwitchValues& switch_values(InstId id, unsigned bits) const
+	{
+		SwitchValues& values = switch_values_[id];
+		if (counted_ && values.checked == edits_ && values.bits == bits)
+			return values;
+		if (!values.current(body_, body_.instructions[id], bits))
+			values.read(body_, body_.instructions[id], bits);
+		values.checked = counted_ ? edits_ : 0;
+		return values;
+	}
+	mutable std::unordered_map<InstId, SwitchValues> switch_values_;
+	uint32_t edits_ = 1;
+	bool counted_ = false;
 	bool split_switch_cases(BlockId p, BlockId s, Value x, unsigned qbits, const ValueSet& query, BlockId on_true,
 		BlockId on_false, TempId cresult);
 	bool accessed_entering(BlockId p, Value v);
@@ -1176,6 +1247,8 @@ bool JumpThreading::known_compares()
 {
 	c_.entry_uses(thread_jumps, !touched_);
 	bool changed = false;
+	++edits_;
+	counted_ = true;
 	// The block map mergeable reads: taken at its first use, and again once
 	// a step has placed instructions.
 	bool mapped = false;
@@ -1217,8 +1290,9 @@ bool JumpThreading::known_compares()
 			for_each_successor(body_, body_.instructions[last], [&](BlockId& b) { targets.push_back(b); });
 			std::sort(targets.begin(), targets.end());
 			targets.erase(std::unique(targets.begin(), targets.end()), targets.end());
+			const SwitchValues& values = switch_values(last, qbits);
 			for (BlockId target : targets)
-				arms.push_back(std::make_pair(target, switched_to(body_, term, target, qbits)));
+				arms.push_back(std::make_pair(target, values.to(target)));
 		}
 		else
 		{
@@ -1448,6 +1522,7 @@ bool JumpThreading::known_compares()
 			c_.ensure_cfg();
 		}
 	}
+	counted_ = false;
 	return changed;
 }
 
@@ -1472,6 +1547,7 @@ bool JumpThreading::bypassable(BlockId p, BlockId s, BlockId target, TempId cres
 // Sends p's edges into the test block s to `target` (bypassable).
 bool JumpThreading::bypass(BlockId p, BlockId s, BlockId target, TempId cresult)
 {
+	++edits_;
 	if (!bypassable(p, s, target, cresult))
 		return false;
 	bool had_edge = false;
@@ -1508,13 +1584,13 @@ bool JumpThreading::edge_fact(BlockId cur, BlockId to, Value& cx, ValueSet& f, u
 	if (br.op == Opcode::Switch && br.ops[0].is(ValueKind::Temp))
 	{
 		bits = value_bits(body_.temps[br.ops[0].index].type);
-		bool reaches = br.ops[1].index == to;
-		for (uint32_t k = 1; k < br.extra_count; k += 2)
-			reaches = reaches || body_.operands[br.extra_first + k].index == to;
-		if (bits == 0 || !reaches)
+		if (bits == 0)
+			return false;
+		const SwitchValues& values = switch_values(t, bits);
+		if (!values.reaches(to))
 			return false;
 		cx = br.ops[0];
-		f = switched_to(body_, br, to, bits);
+		f = values.to(to);
 		return true;
 	}
 	if (br.op != Opcode::Branch || br.ops[1].index == br.ops[2].index || !br.ops[0].is(ValueKind::Temp) ||
@@ -1560,6 +1636,7 @@ bool JumpThreading::edge_fact(BlockId cur, BlockId to, Value& cx, ValueSet& f, u
 bool JumpThreading::split_switch_cases(BlockId p, BlockId s, Value x, unsigned qbits, const ValueSet& query,
 	BlockId on_true, BlockId on_false, TempId cresult)
 {
+	++edits_;
 	const InstId t = body_.blocks[p].last;
 	if (t == kNoId || body_.instructions[t].op != Opcode::Switch || !body_.instructions[t].ops[0].is(ValueKind::Temp) ||
 		(cfg_.flags[p] & BF_HANDLER) != 0)
@@ -1775,6 +1852,7 @@ bool JumpThreading::mergeable(BlockId p, BlockId s, Value v) const
 // brought them as the copy computes it. The new block, or kNoId.
 BlockId JumpThreading::copy_merge(BlockId p, BlockId q, BlockId s)
 {
+	++edits_;
 	const BlockId copy = append_block(body_, BlockKind::Thread);
 	std::vector<BlockId> layout;
 	for (BlockId b : body_.layout)
@@ -1864,6 +1942,7 @@ BlockId JumpThreading::copy_merge(BlockId p, BlockId q, BlockId s)
 // run's budget is spent.
 bool JumpThreading::copy_thread(BlockId s, InstId tail, std::vector<std::pair<BlockId, BlockId>>& redirects)
 {
+	++edits_;
 	if (demoted_ == kDemotedBlocks)
 		return false;
 	// Not a loop header (a copy for the back edge peels the test into
@@ -2102,6 +2181,7 @@ bool JumpThreading::copy_thread(BlockId s, InstId tail, std::vector<std::pair<Bl
 
 bool JumpThreading::demote_phis(BlockId s, std::vector<std::pair<BlockId, BlockId>>& redirects)
 {
+	++edits_;
 	if (demoted_ == kDemotedBlocks)
 		return false;
 	for (uint32_t k = cfg_.pred_first[s]; k < cfg_.pred_first[s + 1]; ++k)
@@ -2289,6 +2369,10 @@ const uint32_t kRangeFacts = 4;
 // branch's value, a select on it, or x where the edge proves x equal k.
 bool JumpThreading::dominating_facts()
 {
+	// (The walk rewrites temporaries alone: a switch keeps its cases, but
+	// for one that is a temporary, which counts as an edit.)
+	++edits_;
+	counted_ = true;
 	const DomChildren& tree = c_.ensure_dom();
 	std::vector<Value> known(body_.temps.size(), Value::none());
 	std::vector<std::pair<TempId, Value>> unequal; // (x, k): x != k
@@ -2449,6 +2533,9 @@ bool JumpThreading::dominating_facts()
 				{
 					v = known[v.index];
 					changed = true;
+					// (A case that was a temporary: the switch is read again.)
+					if (inst.op == Opcode::Switch)
+						++edits_;
 				}
 			});
 			if (inst.op != Opcode::Compare || inst.result == kNoId || inst.result >= known.size() ||
@@ -2530,6 +2617,7 @@ bool JumpThreading::dominating_facts()
 			range_head[ranges.back().root] = ranges.back().prev;
 		stack.pop_back();
 	}
+	counted_ = false;
 	return changed;
 }
 

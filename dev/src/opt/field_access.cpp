@@ -422,7 +422,226 @@ bool FieldAccess::run(bool loads)
 	return changed;
 }
 
+// The most instructions read from a load to the stores of its value.
+const unsigned kMoveScan = 48;
+
+// O2+, late: a class of narrow members moves as their typed accesses (the
+// lowering's form: each may forward). Two 32-bit members written one after
+// the other from the halves of one 64-bit value, or from loads of two
+// adjacent members with no write between the two loads, are one 64-bit
+// store, of that value or of one 64-bit load after the later load.
+class FieldMoves
+{
+public:
+	explicit FieldMoves(FunctionContext& c) : c_(c), body_(c.body) {}
+	bool run();
+
+private:
+	// An address: a root, at most one scaled index, and a byte offset.
+	struct Place
+	{
+		Value root, index;
+		uint64_t scale;
+		int64_t offset;
+	};
+	FunctionContext& c_;
+	FunctionBody& body_;
+
+	const Instruction* producer(Value v) const
+	{
+		return v.is(ValueKind::Temp) && v.index >= body_.parameter_count && body_.temps[v.index].def != kNoId
+			? &body_.instructions[body_.temps[v.index].def]
+			: nullptr;
+	}
+	static bool narrow(const Instruction& inst)
+	{
+		return (inst.flags & IF_VOLATILE) == 0 && storage_bytes(inst.type) == 4 &&
+			(inst.type.is_integer() || inst.type.kind() == TypeKind::F32);
+	}
+	Place place_of(Value address) const;
+	static bool beside(const Place& low, const Place& high)
+	{
+		return low.root == high.root && low.index == high.index && low.scale == high.scale &&
+			high.offset == low.offset + 4;
+	}
+	bool halves(Value low, Value high, Value& whole) const;
+	bool reaches(InstId from, InstId to);
+	InstId wide_load(Value low, Value high);
+	bool join(BlockId block, InstId before, InstId first, InstId second);
+
+	const std::vector<BlockId>* block_of_ = nullptr; // read at the first pair of loads
+};
+
+FieldMoves::Place FieldMoves::place_of(Value address) const
+{
+	Place place = { address, Value::none(), 0, 0 };
+	for (unsigned depth = 0; depth < 6; ++depth)
+	{
+		const Instruction* def = producer(place.root);
+		if (def != nullptr && def->op == Opcode::Copy && def->type.is_pointer())
+			place.root = def->ops[0];
+		else if (def != nullptr && def->op == Opcode::Index && def->ops[1].is(ValueKind::Integer))
+		{
+			place.offset += static_cast<int64_t>(body_.literals[def->ops[1].index].low * storage_bytes(def->type));
+			place.root = def->ops[0];
+		}
+		else if (def != nullptr && def->op == Opcode::Index && place.index.is(ValueKind::None))
+		{
+			place.index = def->ops[1];
+			place.scale = storage_bytes(def->type);
+			place.root = def->ops[0];
+		}
+		else
+			break;
+	}
+	return place;
+}
+
+// Whether `low` and `high` are the two 32-bit halves of one 64-bit value.
+bool FieldMoves::halves(Value low, Value high, Value& whole) const
+{
+	const auto half = [&](Value v) -> const Instruction* {
+		const Instruction* def = producer(v);
+		return def != nullptr && def->op == Opcode::Convert && static_cast<ConvertOp>(def->sub) == ConvertOp::Trunc &&
+				def->type.is_integer() && storage_bytes(def->type) == 4 && convert_source_type(*def).is_integer() &&
+				storage_bytes(convert_source_type(*def)) == 8
+			? def
+			: nullptr;
+	};
+	const Instruction* bottom = half(low);
+	const Instruction* top = half(high);
+	const Instruction* shift = top != nullptr ? producer(top->ops[0]) : nullptr;
+	if (bottom == nullptr || shift == nullptr || shift->op != Opcode::Binary ||
+		(static_cast<BinaryOp>(shift->sub) != BinaryOp::UShr && static_cast<BinaryOp>(shift->sub) != BinaryOp::Shr) ||
+		!shift->ops[1].is(ValueKind::Integer) || body_.literals[shift->ops[1].index].low != 32 ||
+		!(shift->ops[0] == bottom->ops[0]) || !shift->ops[0].is(ValueKind::Temp))
+		return false;
+	whole = shift->ops[0];
+	return true;
+}
+
+// Whether the load `to` follows the load `from` with nothing between them
+// that may write memory: in one block, or `from` in the one block that
+// enters `to`'s.
+bool FieldMoves::reaches(InstId from, InstId to)
+{
+	const BlockId from_block = (*block_of_)[from], to_block = (*block_of_)[to];
+	bool entered = from_block == to_block;
+	unsigned steps = 0;
+	for (InstId last = from, i = body_.instructions[from].next;; last = i, i = body_.instructions[i].next)
+	{
+		if (i == kNoId)
+		{
+			const Cfg& cfg = c_.ensure_cfg_light();
+			if (entered || cfg.pred_count(to_block) != 1 || cfg.preds[cfg.pred_first[to_block]] != from_block ||
+				body_.blocks[from_block].last != last)
+				return false;
+			entered = true;
+			i = body_.blocks[to_block].first;
+		}
+		if (i == to)
+			return entered;
+		if (++steps > kMoveScan || may_write_memory(c_.program, body_.instructions[i]) ||
+			body_.instructions[i].op == Opcode::Phi)
+			return false;
+	}
+}
+
+// One 64-bit load of the two adjacent members that `low` and `high` are
+// loads of, after the later of the two (kNoId: they are no such loads).
+InstId FieldMoves::wide_load(Value low, Value high)
+{
+	const Instruction* low_load = producer(low);
+	const Instruction* high_load = producer(high);
+	if (low_load == nullptr || high_load == nullptr || low_load->op != Opcode::Load || high_load->op != Opcode::Load ||
+		!narrow(*low_load) || !narrow(*high_load) || !beside(place_of(low_load->ops[0]), place_of(high_load->ops[0])))
+		return kNoId;
+	if (block_of_ == nullptr)
+		block_of_ = &c_.entry_block_of(join_field_moves);
+	const InstId low_id = body_.temps[low.index].def, high_id = body_.temps[high.index].def;
+	// (A load made here has no block in the map: its pair is joined already.)
+	if (low_id >= block_of_->size() || high_id >= block_of_->size())
+		return kNoId;
+	const InstId later = reaches(low_id, high_id) ? high_id : reaches(high_id, low_id) ? low_id : kNoId;
+	if (later == kNoId)
+		return kNoId;
+	Instruction load = make_instruction(Opcode::Load, Type::scalar(TypeKind::I64));
+	load.ops[0] = body_.instructions[low_id].ops[0];
+	load.location = body_.instructions[later].location;
+	const InstId at = append_instruction(body_, load);
+	const TempId t = append_temp(body_, load.type, at);
+	body_.instructions[at].result = t;
+	insert_after(body_, (*block_of_)[later], later, at);
+	return at;
+}
+
+// The stores `first` and `second` of one block, with nothing between them
+// that reads or writes memory, as one (`before` precedes `first`).
+bool FieldMoves::join(BlockId block, InstId before, InstId first, InstId second)
+{
+	const Instruction one = body_.instructions[first], two = body_.instructions[second];
+	const Place place_one = place_of(one.ops[1]), place_two = place_of(two.ops[1]);
+	const bool ascending = beside(place_one, place_two);
+	if (!ascending && !beside(place_two, place_one))
+		return false;
+	const Instruction& low = ascending ? one : two;
+	const Instruction& high = ascending ? two : one;
+	Value whole;
+	if (!halves(low.ops[0], high.ops[0], whole))
+	{
+		const InstId at = wide_load(low.ops[0], high.ops[0]);
+		if (at == kNoId)
+			return false;
+		if (body_.instructions[at].next == first)
+			before = at;
+		whole = Value::temp(body_.instructions[at].result);
+	}
+	const Value address = low.ops[1];
+	Instruction& store = body_.instructions[second];
+	store.type = body_.temps[whole.index].type;
+	store.ops[0] = whole;
+	store.ops[1] = address;
+	store.flags &= static_cast<uint8_t>(~IF_TYPED);
+	unlink_after(body_, block, before, first);
+	return true;
+}
+
+bool FieldMoves::run()
+{
+	bool changed = false;
+	for (BlockId b : body_.layout)
+	{
+		// The last narrow store, while nothing after it reads or writes memory.
+		InstId first = kNoId, before_first = kNoId, prev = kNoId;
+		for (InstId i = body_.blocks[b].first; i != kNoId; prev = i, i = body_.instructions[i].next)
+		{
+			const Instruction& inst = body_.instructions[i];
+			if (inst.op == Opcode::Store && narrow(inst))
+			{
+				if (first != kNoId && join(b, before_first, first, i))
+				{
+					changed = true;
+					first = kNoId;
+				}
+				else
+				{
+					first = i;
+					before_first = prev;
+				}
+			}
+			else if (!is_pure(inst) || inst.op == Opcode::Phi)
+				first = kNoId;
+		}
+	}
+	return changed;
+}
+
 } // namespace
+
+bool join_field_moves(FunctionContext& context)
+{
+	return FieldMoves(context).run();
+}
 
 bool narrow_field_stores(FunctionContext& context)
 {

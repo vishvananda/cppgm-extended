@@ -60,7 +60,7 @@ struct FunctionContext
 			if (cfg_light)
 				complete_cfg(cfg);
 			else
-				build_cfg(program, body, cfg);
+				build_cfg(program, body, cfg, no_eh());
 			cfg_valid = true;
 			cfg_light = false;
 		}
@@ -73,7 +73,7 @@ struct FunctionContext
 	{
 		if (!cfg_valid && !cfg_light)
 		{
-			build_cfg_light(program, body, cfg);
+			build_cfg_light(program, body, cfg, no_eh());
 			cfg_light = true;
 		}
 		return cfg;
@@ -81,6 +81,25 @@ struct FunctionContext
 	// The dominator tree (built with the CFG's dominance intervals).
 	const DomChildren& ensure_dom() { return ensure_cfg().tree; }
 	void invalidate_cfg() { cfg_valid = cfg_light = false; }
+	// Whether the body has no EH instruction, linked or not: its
+	// instructions are read once, and then those appended since (a pass
+	// makes an EH instruction only as a new instruction, never of another
+	// one in place, and a body is compacted when its context is done).
+	// The CFG of such a body has no handler edge and no EH block, which its
+	// builder then reads no block to learn.
+	uint32_t eh_read = 0;
+	bool eh_found = false;
+	bool no_eh()
+	{
+		if (body.instructions.size() < eh_read)
+		{
+			eh_read = 0;
+			eh_found = false;
+		}
+		for (; !eh_found && eh_read < body.instructions.size(); ++eh_read)
+			eh_found = is_eh_instruction(body.instructions[eh_read].op);
+		return !eh_found;
+	}
 	// Per symbol: a definition this optimization proved cannot unwind
 	// (internal fact, re-derived from the same LowIR by any consumer).
 	const std::vector<uint8_t>* nounwind = nullptr;
@@ -285,12 +304,22 @@ bool sink_addresses(FunctionContext& context);
 // alone, and a tested `(x >> c) & m` tests x's own bits.
 bool narrow_field_stores(FunctionContext& context);
 bool narrow_field_loads(FunctionContext& context);
+// O2+, after them: two adjacent 32-bit members stored one after the other
+// from the halves of one 64-bit value, or from loads of two adjacent
+// members with no write between the loads, are stored as one 64-bit value
+// (read by one load). O(instructions), with a bounded walk per pair.
+bool join_field_moves(FunctionContext& context);
 
 // Consume dying scalar integer operands derived from loads as soon as their
 // definitions allow, within one block and without crossing memory effects or
 // trapping operations.
 // O(instructions + operands), with stable buckets for the new order.
 bool schedule_integer_values(FunctionContext& context);
+// After it: a counter's step `y = x + literal` stands after the last read
+// of x in its block (x itself, or an address formed from it by literal
+// offsets) when x is live nowhere after the block, so that y takes x's
+// register. O(instructions), with a bounded walk of blocks per step.
+bool place_steps(FunctionContext& context);
 // O2+: a loop without calls reads its floating literals from registers
 // (opt/loop_literals.cpp).
 bool hold_loop_literals(FunctionContext& context);

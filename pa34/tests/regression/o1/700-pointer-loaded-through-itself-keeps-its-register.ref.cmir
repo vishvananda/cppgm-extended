@@ -1,0 +1,75 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @nodes
+  storage data
+  item zero 72
+
+function @marked_sum
+  abi
+    param %p -> rdi : ptr
+    param %n -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, 0
+    mov rcx, 0
+
+  block ^head
+    cmp.i64 rax, rsi
+    jge ^done
+
+  block ^body
+    load.ptr rdi, [rdi+<off0>]
+    cmp.u8 [rdi+<off1>], 0
+    jne ^marked
+
+  block ^latch
+    add rax, 1
+    cmp.i64 rax, rsi
+    jl ^body
+    ret rcx
+
+  block ^done
+    ret rcx
+
+  block ^marked
+    add rcx, [rdi]
+    jmp ^latch
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, @nodes
+    lea rax, [rdi+<off2>]
+    lea rcx, [rdi+<off3>]
+    store.i64 [rdi], 5
+    store.i64 [rax], 7
+    store.i64 [rcx], 11
+    store.ptr [rdi+<off0>], rax
+    store.ptr [rax+<off0>], rcx
+    store.ptr [rcx+<off0>], rdi
+    store.u8 [rax+<off1>], 1
+    store.u8 [rcx+<off1>], 1
+    mov rsi, 4
+    call @marked_sum [args=(rsi,rdi)]
+    cmp.i64 rax, 25
+    setne rax
+    movzx rax, rax
+    ret rax

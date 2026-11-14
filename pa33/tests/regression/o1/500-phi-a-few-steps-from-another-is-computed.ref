@@ -1,0 +1,71 @@
+function @behind(%n : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %h0 = binary sub i64 %n, 1
+    jump ^head
+
+  block ^head:
+    %hole = phi i64 [^entry: %h0, ^body: %parent]
+    %sum = phi i64 [^entry: 0, ^body: %sum2]
+    %parent = binary sub i64 %hole, 3
+    %more = cmp gt i64 %hole, 0
+    branch %more, ^body, ^done
+
+  block ^body:
+    %sum2 = binary add i64 %parent, %sum
+    jump ^head
+
+  block ^done:
+    return i64 %sum
+}
+function @behind_half(%n : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %h0 = binary sub i64 %n, 1
+    jump ^head
+
+  block ^head:
+    %hole = phi i64 [^entry: %h0, ^body: %parent]
+    %sum = phi i64 [^entry: 0, ^body: %sum2]
+    %t4 = binary sub i64 %hole, 1
+    %parent = binary udiv i64 %t4, 2
+    branch %hole, ^body, ^done
+
+  block ^body:
+    %sum2 = binary add i64 %parent, %sum
+    jump ^head
+
+  block ^done:
+    return i64 %sum
+}
+function @apart(%n : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %h0 = binary sub i64 %n, 1
+    %p0 = binary add i64 %n, -3
+    jump ^head
+
+  block ^head:
+    %parent = phi i64 [^entry: %p0, ^body: %next]
+    %hole = phi i64 [^entry: %h0, ^body: %parent]
+    %sum = phi i64 [^entry: 0, ^body: %sum2]
+    %more = cmp gt i64 %hole, 0
+    branch %more, ^body, ^done
+
+  block ^body:
+    %sum2 = binary add i64 %parent, %sum
+    %next = binary sub i64 %parent, 3
+    jump ^head
+
+  block ^done:
+    return i64 %sum
+}
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    %a = call i64 @behind(10)
+    %a_bad = cmp ne i64 %a, 9
+    %b = call i64 @behind_half(20)
+    %b_bad = cmp ne i64 %b, 14
+    %c = call i64 @apart(10)
+    %c_bad = cmp ne i64 %c, 10
+    %bad0 = binary or i64 %a_bad, %b_bad
+    %bad = binary or i64 %c_bad, %bad0
+    return i64 %bad
+}

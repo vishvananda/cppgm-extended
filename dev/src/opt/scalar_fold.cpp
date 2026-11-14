@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "lowir/literals.h"
+#include "opt/function_ir.h"
 #include "lex/extended_float.h"
 
 namespace opt {
@@ -683,6 +684,61 @@ bool magnitude_below_zero(const FunctionBody& body, const Instruction& compare)
 	};
 	return first != nullptr && second != nullptr &&
 		(negates(first->ops[0], second->ops[0]) || negates(second->ops[0], first->ops[0]));
+}
+
+namespace {
+
+// A floating division by a power of two whose reciprocal is exact is a
+// multiplication by it: the same real result, rounded the same, far cheaper.
+bool exact_reciprocal(FunctionBody& body, Instruction& inst)
+{
+	const TypeKind kind = inst.type.kind();
+	if (static_cast<BinaryOp>(inst.sub) != BinaryOp::Div || !inst.ops[1].is(ValueKind::Float) ||
+		inst.ops[1].float_kind != kind)
+		return false;
+	const unsigned fraction = kind == TypeKind::F32 ? 23 : 52;
+	const uint64_t top = kind == TypeKind::F32 ? 0xff : 0x7ff;
+	const uint64_t bits = body.literals[inst.ops[1].index].low;
+	const uint64_t exponent = (bits >> fraction) & top;
+	if ((bits & ((static_cast<uint64_t>(1) << fraction) - 1)) != 0 || exponent == 0 || exponent >= top - 1)
+		return false;
+	const uint64_t sign = bits & (static_cast<uint64_t>(1) << (fraction + (kind == TypeKind::F32 ? 8 : 11)));
+	const Literal inverse = { sign | ((top - 1 - exponent) << fraction), 0 };
+	inst.sub = static_cast<uint8_t>(BinaryOp::Mul);
+	inst.ops[1] = literal_value(body, ValueKind::Float, kind, inverse);
+	return true;
+}
+
+// A floating product with two is the value added to itself: the same result
+// for every value (the exponent rises by one, or the sum overflows as the
+// product does), with no literal to read.
+bool doubled(FunctionBody& body, std::vector<uint32_t>& uses, Instruction& inst)
+{
+	const TypeKind kind = inst.type.kind();
+	if (static_cast<BinaryOp>(inst.sub) != BinaryOp::Mul)
+		return false;
+	const uint64_t two = kind == TypeKind::F32 ? 0x40000000ull : 0x4000000000000000ull;
+	for (unsigned k = 0; k < 2; ++k)
+		if (inst.ops[k].is(ValueKind::Float) && inst.ops[k].float_kind == kind &&
+			body.literals[inst.ops[k].index].low == two)
+		{
+			const Value x = inst.ops[1 - k];
+			if (x.is(ValueKind::Temp) && x.index < uses.size() && uses[x.index] != 0xffffffffu)
+				++uses[x.index];
+			inst.sub = static_cast<uint8_t>(BinaryOp::Add);
+			inst.ops[k] = x;
+			return true;
+		}
+	return false;
+}
+
+} // namespace
+
+bool cheaper_float_arithmetic(FunctionBody& body, std::vector<uint32_t>& uses, Instruction& inst)
+{
+	const TypeKind kind = inst.type.kind();
+	return inst.op == Opcode::Binary && (kind == TypeKind::F32 || kind == TypeKind::F64) &&
+		(exact_reciprocal(body, inst) || doubled(body, uses, inst));
 }
 
 } // namespace opt

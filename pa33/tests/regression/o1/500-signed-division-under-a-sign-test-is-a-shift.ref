@@ -1,0 +1,66 @@
+function @half_if_positive(%x : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %pos = cmp gt i64 %x, 0
+    %h = binary ushr i64 %x, 1
+    %t3 = select i64 %pos, %h, -1
+    return i64 %t3
+}
+function @parent_of(%hole : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %pos = cmp gt i64 %hole, 0
+    %less = binary sub i64 %hole, 1
+    %h = binary ushr i64 %less, 1
+    %t4 = select i64 %pos, %h, -1
+    return i64 %t4
+}
+function @low_bits(%x : i32) -> i32 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %neg = cmp lt i32 %x, 0
+    %m = binary and i32 %x, 7
+    %t3 = select i32 %neg, -1, %m
+    return i32 %t3
+}
+function @unknown(%x : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %h = binary div i64 %x, 2
+    return i64 %h
+}
+function @other_side(%x : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %pos = cmp gt i64 %x, 0
+    branch %pos, ^yes, ^no
+
+  block ^yes:
+    return i64 1
+
+  block ^no:
+    %h = binary div i64 %x, 2
+    return i64 %h
+}
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    %a = call i64 @half_if_positive(7)
+    %a_bad = cmp ne i64 %a, 3
+    %b = call i64 @parent_of(8)
+    %b_bad = cmp ne i64 %b, 3
+    %c = call i32 @low_bits(29)
+    %c_bad = cmp ne i32 %c, 5
+    %d = call i64 @half_if_positive(0)
+    %d_bad = cmp ne i64 %d, -1
+    %e = call i64 @unknown(-7)
+    %e_bad = cmp ne i64 %e, -3
+    %f = call i64 @other_side(-7)
+    %f_bad = cmp ne i64 %f, -3
+    %g = call i64 @half_if_positive(-7)
+    %g_bad = cmp ne i64 %g, -1
+    %h = call i64 @parent_of(1)
+    %h_bad = cmp ne i64 %h, 0
+    %bad0 = binary or i64 %a_bad, %b_bad
+    %bad1 = binary or i64 %c_bad, %d_bad
+    %bad2 = binary or i64 %e_bad, %f_bad
+    %bad3 = binary or i64 %g_bad, %h_bad
+    %bad4 = binary or i64 %bad0, %bad1
+    %bad5 = binary or i64 %bad2, %bad3
+    %bad = binary or i64 %bad4, %bad5
+    return i64 %bad
+}

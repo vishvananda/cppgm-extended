@@ -176,9 +176,16 @@ void verify_kept_analyses(const FunctionContext& context, const char* pass)
 		count_uses(body, fresh);
 		stale = stale || fresh != context.uses;
 	}
-	if (!stale)
+	// (An EH instruction the context's reading of the body did not meet.)
+	bool missed = false;
+	if (!context.eh_found)
+		for (BlockId block : body.layout)
+			for (InstId i = body.blocks[block].first; i != kNoId && !missed; i = body.instructions[i].next)
+				missed = i < context.eh_read && is_eh_instruction(body.instructions[i].op);
+	if (!stale && !missed)
 		return;
-	std::fprintf(stderr, "lowiropt verify: stale block map or use counts after %s in @%s\n", pass,
+	std::fprintf(stderr, "lowiropt verify: stale %s after %s in @%s\n",
+		missed ? "EH reading" : "block map or use counts", pass,
 		context.program.spelling(context.program.symbols[context.symbol].name));
 	std::exit(3);
 }
@@ -664,8 +671,14 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		changed = true;
 	}
 	const bool had_loops = has_loop(context);
-	if (had_loops)
-		changed = finish_loops(context, options.level) || changed;
+	if (had_loops && finish_loops(context, options.level))
+	{
+		// A load the loop passes took out of an arm leaves the arm to compute
+		// only: the branch to it may now be a choice of values.
+		for (unsigned round = 0; round < kSelectRounds && RUN_PASS(form_selects); ++round)
+			RUN_PASS(cleanup_cfg);
+		changed = true;
+	}
 	if (options.level >= 3 && RUN_PASS(fold_bit_recurrences))
 	{
 		nounwind.resize(program.symbols.size(), 0);
@@ -685,8 +698,14 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		changed = true;
 	}
 	changed = narrow_fields(context) || changed;
+	if (options.level >= 2 && RUN_PASS(join_field_moves))
+	{
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
 	changed = RUN_PASS(sink_values) || changed;
 	changed = RUN_PASS(schedule_integer_values) || changed;
+	changed = RUN_PASS(place_steps) || changed;
 	changed = RUN_PASS(hold_loop_literals) || changed;
 	changed = RUN_PASS(issue_long_latency) || changed;
 	changed = RUN_PASS(sink_addresses) || changed;
