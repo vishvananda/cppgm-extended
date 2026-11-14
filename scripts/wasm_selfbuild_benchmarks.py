@@ -31,7 +31,7 @@ def matched_flags(manifest, clang=False):
     # Both producers consume the same frozen headers, EH libraries, feature
     # macros and single-threaded libc++ configuration. Only Clang needs its
     # instruction-selection switches and an explicit EH header search path.
-    flags = [*manifest['flags'], '-fno-strict-aliasing', '-Lsysroot/lib/wasm32-wasip1/eh']
+    flags = [*manifest['flags'], '-matomics', '-fno-strict-aliasing', '-Lsysroot/lib/wasm32-wasip1/eh']
     if clang:
         flags += ['-fexceptions', '-fwasm-exceptions', '-mllvm', '-wasm-use-legacy-eh=false',
                   '-isystem', 'sysroot/include/wasm32-wasip1/eh/c++/v1']

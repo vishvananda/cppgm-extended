@@ -30,6 +30,11 @@ Node 20 or newer is required; CI uses Node 24. npm's lockfile pins Playwright
 1.63.0 (including Chromium) and browser_wasi_shim 0.4.2 with package integrity.
 The current lane qualifies Chromium; Firefox and Safari are not qualified.
 
+It also checks the optional embedding controls against the real source and
+LowIR tools: explicit function imports, deferred constructors, function-table
+access, empty compiler barriers and TLS storage isolated between unshared
+module instances. These extensions do not add student requirements.
+
 The default creates a new package under `obj/wasm-inception/` and a sibling
 `-logs` directory. Existing packages, including failed stages, are never reused.
 Every phase and command retains elapsed time, hashes and diagnostics. A failure
@@ -135,7 +140,7 @@ The driver defaults to Playwright's pinned Chromium. Its optional trailing
 arguments `CHROMIUM FIREFOX chromium|firefox|all` support external executables
 and diagnostic engine selection. Separate invocations can run concurrently. Browser binaries, package downloads and test
 results stay outside Git. No cross-origin isolation or shared guest memory is
-required. The engine must support the module's modern exceptions and SIMD128;
+required. The engine must support the module's modern exceptions, SIMD128 and atomics;
 compiling the actual seed checks that support. Safari has not been qualified.
 
 ## Compiler host profile
@@ -146,6 +151,33 @@ with the compiler's own Wasm linker. `wasi_host.h` selects the single-thread
 libc++ header profile and maps the SDK's `_Thread_local` errno declaration to
 its qualified ordinary data symbol. This does not add general TLS or atomics.
 The SDK files remain unchanged.
+
+## Emscripten experiment
+
+The Godot web-editor build and browser-local final link are still in progress.
+Prepare a private profile from an installed Emscripten 4.0.9 SDK:
+
+```sh
+python3 scripts/experimental/prepare_emscripten.py \
+  --emsdk /absolute/path/emsdk --directory /absolute/new-profile
+```
+
+The script copies the SDK, selects libc++ ABI1 in both its source and installed
+headers, removes cached ABI2 C++ archives, and rebuilds the no-exception C++
+runtime libraries with the SDK's Clang. It combines two warning-only deprecated
+attribute messages into the supported one-message form. It records the exact
+changes, runtime hashes and compiler flags in `profile.json`, and keeps build
+diagnostics beside it. The original SDK is unchanged. Use the private profile
+for both cppgm and Clang comparisons. The selected profile has no pthreads,
+exceptions, dynamic linking or LTO.
+
+For embedding, `--import-function NAME` explicitly permits that undefined
+function to use its object signature as an `env` import. Other unresolved
+symbols still fail. `--export-table` exposes `__indirect_function_table`.
+`--export-ctors` exposes `__wasm_call_ctors` and defers freestanding constructor
+execution until the host calls it. The default freestanding initialization
+behavior remains as described in PA37. These options are shared by `cppgm++`
+and `lowir2native` and require a Wasm target.
 
 `-Wl,-z,stack-size=8388608` reserves an 8 MiB linear-memory stack; the compiler's
 WASI recursion budget is 4 MiB. Wasmtime is also given an 8 MiB engine-stack
@@ -461,3 +493,9 @@ dependencies described in `scripts/experimental/README.md`, run:
 python3 scripts/wasm_selfbuild_benchmarks.py --tools obj/wasm-tools \
   --output obj/wasm-selfbuild --jobs 2
 ```
+
+## Browser presentation
+
+The interactive compiler and OpenLara presentation at https://incpption.com is
+maintained separately from the compiler and this optional verification lane.
+The lane here keeps the full W1/W2/W3, native/WASI x86 and embedding checks.

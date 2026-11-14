@@ -29,6 +29,7 @@ class SelfBuildTests(unittest.TestCase):
         candidate, reference = bench.matched_flags(manifest), bench.matched_flags(manifest, True)
         self.assertEqual(reference[:len(candidate)], candidate)
         self.assertIn('-fno-strict-aliasing', candidate)
+        self.assertIn('-matomics', candidate)
         self.assertIn('sysroot/include/wasm32-wasip1/eh/c++/v1', reference)
         self.assertIn('-fwasm-exceptions', reference)
         self.assertEqual(manifest['flags'], flags)

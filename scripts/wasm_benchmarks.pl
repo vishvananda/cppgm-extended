@@ -96,7 +96,7 @@ capture([shellwords($host_cxx), '-std=c++11', '-O2', '-Wall', '-Wextra', '-Werro
 my $clang = "$tools/bin/wasm-ref-clang++";
 my $lld = "$tools/bin/wasm-ref-ld";
 my $validator = "$tools/bin/wasm-tools";
-my @flags = ('-std=c++11', "-O$level", '-fno-exceptions', '-fno-strict-aliasing');
+my @flags = ('-std=c++11', "-O$level", '-matomics', '-fno-exceptions', '-fno-strict-aliasing');
 my $metadata = {revision => $revision, dirty => $dirty ? JSON::PP::true : JSON::PP::false,
     cpu => $cpu, architecture => $uname[4], operating_system => join(' ', @uname[0,2,3]), affinity => \@affinity,
     source_sha256 => sha256_hex(read_file($source) . read_file("$output/applications.h")), compiler_sha256 => digest($compiler), clang_sha256 => digest($clang),

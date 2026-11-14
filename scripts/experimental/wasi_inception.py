@@ -78,6 +78,8 @@ def prepare(args):
     inputs.mkdir()
     copy_tree(REPO / "dev/src", inputs / "dev/src")
     shutil.copyfile(REPO / "dev/cppgm++.cpp", inputs / "dev/cppgm++.cpp")
+    for name in ['LICENSE', 'NOTICE']:
+        shutil.copyfile(REPO / name, inputs / name)
     shutil.copyfile(HERE / "wasi_host.h", inputs / "wasi_host.h")
     makefile = "include dev/frontend_source_sets.mk\nlist:\n\t@printf '%s\\n' $(FRONTEND_OBJ_BASENAMES_cppgm++)\n"
     sources = subprocess.check_output(["make", "-s", "-f", "-", "list"],
@@ -135,7 +137,8 @@ def prepare(args):
                 files.append({"path": path.relative_to(inputs).as_posix(), "offset": bundle.tell(),
                               "size": len(data), "sha256": digest(data)})
                 bundle.write(data)
-    runners = ["wasi_inception.py", "wasi_worker.mjs", "wasi_browser.html", "wasi_browser_test.cjs"]
+    runners = ["wasi_inception.py", "wasi_worker.mjs", "wasi_runtime.mjs",
+               "wasi_browser.html", "wasi_browser_test.cjs", "transport_bytes.mjs"]
     for name in runners:
         shutil.copyfile(HERE / name, package / name)
     manifest = {"schema": 1, "sources": sources, "flags": flags,
@@ -150,7 +153,10 @@ def prepare(args):
                                for p in sorted((package / "shim").rglob("*")) if p.is_file()},
                 "runner_files": {name: digest((package / name).read_bytes()) for name in runners},
                 "sdk_version": (args.sdk / "VERSION").read_text(),
-                "revision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO).decode().strip()}
+                "revision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO).decode().strip(),
+                "dirty": bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=REPO)),
+                "source_sha256": digest(json.dumps([(f['path'], f['sha256']) for f in files
+                                                     if f['path'].startswith('dev/')]).encode())}
     save(package / "manifest.json", manifest)
     (package / "manifest.sha256").write_text(digest((package / "manifest.json").read_bytes()) + "\n")
     print(f"Frozen {len(sources)} sources, {len(files)} files, {(package / 'bundle.bin').stat().st_size} bytes", flush=True)

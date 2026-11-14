@@ -44,6 +44,8 @@ def plan(args, package):
                            '--shim', str(args.shim.resolve()), '--x86-headers']),
         ('wasi', tool + ['build', *common, *runtime]),
         ('x86', tool + ['x86', *common, *runtime, '--levels', '0', '2', '3']),
+        ('embedding', [sys.executable, str(HERE / 'test_embedding.py'),
+                       '--compiler', str(args.compiler.resolve()), '--node', args.node]),
         ('chromium', [args.node, str(HERE / 'wasi_browser_test.cjs'), str(package),
                       str(args.playwright.resolve()), str(args.chromium.resolve()) if args.chromium else '',
                       '', 'chromium']),
@@ -53,7 +55,7 @@ def plan(args, package):
 def preflight(args):
     if platform.system() != 'Linux' or platform.machine() not in ('x86_64', 'AMD64'):
         raise RuntimeError('this optional host profile requires Linux x86-64')
-    for path in [args.compiler, args.tools / 'bin/wasmtime', args.tools / 'wasi-sdk/VERSION',
+    for path in [args.compiler, REPO / 'dev/lowir2native', args.tools / 'bin/wasmtime', args.tools / 'wasi-sdk/VERSION',
                  args.shim / 'dist/index.js', args.playwright / 'package.json',
                  REPO / 'obj/generated/cppgm_builtin_host_config.h']:
         if not path.is_file():

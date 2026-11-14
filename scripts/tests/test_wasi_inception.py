@@ -3,6 +3,8 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+import sys
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -24,11 +26,23 @@ class WasiInception(unittest.TestCase):
     def test_lane_requires_all_fixed_points_and_x86_levels(self):
         args = lane.arguments([])
         phases = lane.plan(args, Path('/new-package'))
-        self.assertEqual([name for name, _ in phases], ['prepare', 'wasi', 'x86', 'chromium'])
+        self.assertEqual([name for name, _ in phases], ['prepare', 'wasi', 'x86', 'embedding', 'chromium'])
         self.assertIn('--x86-headers', phases[0][1])
         self.assertNotIn('--stages', phases[1][1])  # default builds W1, W2 and W3
         self.assertEqual(phases[2][1][-4:], ['--levels', '0', '2', '3'])
-        self.assertEqual(phases[3][1][-1], 'chromium')
+        self.assertIn('test_embedding.py', phases[3][1][1])
+        self.assertEqual(phases[4][1][-1], 'chromium')
+        args.chromium = Path('/custom/chromium')
+        self.assertEqual(lane.plan(args, Path('/new-package'))[4][1][4], '/custom/chromium')
+
+    def test_benchmark_package_import_preserves_existing_directory(self):
+        # The benchmark imports experimental.wasi_inception instead of running
+        # its script. Both entry points must retain the existing-directory guard.
+        with patch('sys.path', [str(ROOT / 'scripts'), *sys.path]):
+            packaged = importlib.import_module('experimental.wasi_inception')
+            with tempfile.TemporaryDirectory() as directory:
+                with self.assertRaises(FileExistsError):
+                    packaged.prepare(SimpleNamespace(directory=Path(directory)))
 
     def test_failure_stops_later_phases_and_retains_observations(self):
         with tempfile.TemporaryDirectory() as directory:
