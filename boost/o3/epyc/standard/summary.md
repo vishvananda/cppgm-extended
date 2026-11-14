@@ -28,14 +28,14 @@ Availability describes the supplied records; measurements from other reports may
 
 | Workload / configuration | Oracle | CPU / environment | Opt | Passed / executed / selected | Excluded | Status | Revision |
 |---|---|---|---|---|---|---|---|
-| [boost/o3](boost.md) | Original B2 compile/link/run and expected-failure actions, including GDB; all three compilers | AMD EPYC 9V45 96-Core Processor / GitHub hosted; Ubuntu 26.04 container | mixed | 1818 / 1818 / 1818 Boost test declarations per compiler | 0 | passed | 1597e573a |
+| [boost/o3](boost.md) | Original B2 compile/link/run and expected-failure actions, including GDB; all three compilers | AMD EPYC 9V74 80-Core Processor / GitHub hosted; Ubuntu 26.04 container | mixed | 1818 / 1818 / 1818 Boost test declarations per compiler | 0 | passed | 9ed2f1eea |
 
-## AMD EPYC 9V45 96-Core Processor — GitHub hosted; Ubuntu 26.04 container
+## AMD EPYC 9V74 80-Core Processor — GitHub hosted; Ubuntu 26.04 container
 
-Architecture: x86_64; host profile `boost-b9d57f72a2f9ce76`.
+Architecture: x86_64; host profile `boost-8763d4a3acaf770e`.
 
 | Workload / configuration / test | Opt | Phase / metric | vs GCC | vs Clang | Validation | Case set | Revision |
 |---|---|---|---:|---:|---|---|---|
-| [boost/o3/all-suites](boost.md) | O3 | compile / cpu_seconds | 4.262× | 3.702× | clang: 1817/1817 cppgm, 1817/1817 reference; gcc: 1817/1817 cppgm, 1817/1817 reference | 1817 test declarations; set 56256889 | `1597e573a` |
-| [boost/o3/all-suites](boost.md) | O3 | runtime / cpu_seconds | 0.974× | 0.963× | clang: 1375/1375 cppgm, 1375/1375 reference; gcc: 1375/1375 cppgm, 1375/1375 reference | 1375 native test programs; set f805acfd | `1597e573a` |
-| [boost/o3/all-suites](boost.md) | mixed | test-execution / cpu_seconds | 0.910× | 0.901× | clang: 1378/1378 cppgm, 1378/1378 reference; gcc: 1378/1378 cppgm, 1378/1378 reference | 1378 native test actions; set 41c66211 | `1597e573a` |
+| [boost/o3/all-suites](boost.md) | O3 | compile / cpu_seconds | 4.595× | 4.476× | clang: 1817/1817 cppgm, 1817/1817 reference; gcc: 1817/1817 cppgm, 1817/1817 reference | 1817 test declarations; set 56256889 | `9ed2f1eea` |
+| [boost/o3/all-suites](boost.md) | O3 | runtime / cpu_seconds | 0.961× | 0.940× | clang: 1375/1375 cppgm, 1375/1375 reference; gcc: 1375/1375 cppgm, 1375/1375 reference | 1375 native test programs; set f805acfd | `9ed2f1eea` |
+| [boost/o3/all-suites](boost.md) | mixed | test-execution / cpu_seconds | 0.948× | 0.982× | clang: 1378/1378 cppgm, 1378/1378 reference; gcc: 1378/1378 cppgm, 1378/1378 reference | 1378 native test actions; set 41c66211 | `9ed2f1eea` |
