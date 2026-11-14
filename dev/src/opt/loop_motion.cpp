@@ -23,7 +23,9 @@ private:
 	void note_register_uses();
 	bool literal_index(const Instruction& inst) const;
 	bool speculable(const Instruction& inst) const;
+	bool costly(const Instruction& inst) const;
 	bool worth_moving(const Instruction& inst, bool calls) const;
+	void find_feeders(uint32_t loop);
 	bool sweep(uint32_t loop, bool apply);
 
 	FunctionContext& c_;
@@ -31,6 +33,8 @@ private:
 	Cfg& cfg_;
 	LoopForest forest_;
 	std::vector<uint8_t> in_register_; // per temp: some use needs it in a register
+	std::vector<uint8_t> feeds_;       // per temp of the loop at hand: could leave (1), a costly one reads it (2)
+	std::vector<TempId> fed_;          // the temps feeds_ marks
 };
 
 bool LoopMotion::invariant(uint32_t loop, Value v) const
@@ -92,6 +96,16 @@ bool LoopMotion::speculable(const Instruction& inst) const
 	return (divisor.low != 0 || divisor.high != 0) && !(is_signed && static_cast<int64_t>(divisor.low) == -1);
 }
 
+// A computation that pays for a value held across a loop's calls.
+bool LoopMotion::costly(const Instruction& inst) const
+{
+	if (inst.op != Opcode::Binary)
+		return false;
+	const BinaryOp op = static_cast<BinaryOp>(inst.sub);
+	return op == BinaryOp::Mul || op == BinaryOp::Div || op == BinaryOp::Mod || op == BinaryOp::UDiv ||
+		op == BinaryOp::UMod;
+}
+
 // A loop with a call would carry the value across it in memory or in one of
 // the few registers calls keep: only a costly computation pays for that.
 bool LoopMotion::worth_moving(const Instruction& inst, bool calls) const
@@ -109,11 +123,7 @@ bool LoopMotion::worth_moving(const Instruction& inst, bool calls) const
 	case Opcode::Index:
 		return !calls && (!c_.costs.scaled_memory_operands || !literal_index(inst) || in_register_[inst.result] != 0);
 	case Opcode::Binary:
-	{
-		const BinaryOp op = static_cast<BinaryOp>(inst.sub);
-		return !calls || op == BinaryOp::Mul || op == BinaryOp::Div || op == BinaryOp::Mod || op == BinaryOp::UDiv ||
-			op == BinaryOp::UMod;
-	}
+		return !calls || costly(inst);
 	case Opcode::Compare:
 	case Opcode::Copy:
 	case Opcode::Unary:
@@ -123,6 +133,59 @@ bool LoopMotion::worth_moving(const Instruction& inst, bool calls) const
 		return !calls;
 	default:
 		return false;
+	}
+}
+
+// In a loop with calls, the cheap computations a costly one needs to leave
+// it: each reads only what the loop does not compute or other values that
+// could leave, and a costly instruction that could leave reads it (through
+// others of them). They leave with it: a cheap value alone stays, since it
+// would only be held across the calls.
+void LoopMotion::find_feeders(uint32_t loop)
+{
+	for (TempId t : fed_)
+		feeds_[t] = 0;
+	fed_.clear();
+	if (feeds_.size() < body_.temps.size())
+		feeds_.resize(body_.temps.size(), 0);
+	const Loop& l = forest_.loops[loop];
+	const auto plain = [&](const Instruction& inst) {
+		const bool kind = inst.op == Opcode::Binary || inst.op == Opcode::Compare || inst.op == Opcode::Copy ||
+			inst.op == Opcode::Unary || inst.op == Opcode::Select || inst.op == Opcode::Convert;
+		return kind && inst.result != kNoId && !inst.type.is_object() && inst.type.kind() != TypeKind::F80 &&
+			inst.type.kind() != TypeKind::I128 &&
+			!(inst.op == Opcode::Convert && convert_source_type(inst).kind() == TypeKind::I128) && speculable(inst);
+	};
+	for (bool changed = true; changed;)
+	{
+		changed = false;
+		for (BlockId b : l.blocks)
+			for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+			{
+				const Instruction& inst = body_.instructions[i];
+				if (!plain(inst) || feeds_[inst.result] != 0)
+					continue;
+				bool leaves = true;
+				for_each_operand(body_, inst, [&](const Value& v) {
+					leaves = leaves && (invariant(loop, v) || (v.index < feeds_.size() && feeds_[v.index] != 0));
+				});
+				if (!leaves)
+					continue;
+				feeds_[inst.result] = 1;
+				fed_.push_back(inst.result);
+				changed = true;
+			}
+	}
+	// (fed_ has definitions before their readers.)
+	for (size_t k = fed_.size(); k-- > 0;)
+	{
+		const Instruction& inst = body_.instructions[body_.temps[fed_[k]].def];
+		if (!costly(inst) && (feeds_[fed_[k]] & 2) == 0)
+			continue;
+		for_each_operand(body_, inst, [&](const Value& v) {
+			if (v.is(ValueKind::Temp) && v.index < feeds_.size() && feeds_[v.index] != 0)
+				feeds_[v.index] |= 2;
+		});
 	}
 }
 
@@ -137,6 +200,9 @@ bool LoopMotion::sweep(uint32_t loop, bool apply)
 	for (BlockId b : l.blocks)
 		for (InstId i = body_.blocks[b].first; i != kNoId && !calls; i = body_.instructions[i].next)
 			calls = body_.instructions[i].op == Opcode::Call || body_.instructions[i].op == Opcode::Asm;
+	const bool feeders = calls && !c_.costs.locals_survive_calls;
+	if (feeders)
+		find_feeders(loop);
 	const BlockId pre = l.preheader;
 	InstId tail = apply ? previous_in_block(body_, pre, body_.blocks[pre].last) : kNoId;
 	bool any = false;
@@ -155,7 +221,9 @@ bool LoopMotion::sweep(uint32_t loop, bool apply)
 				const Instruction& inst = body_.instructions[i];
 				const InstId next = inst.next;
 				bool move = is_pure(inst) && inst.op != Opcode::Phi && !inst.type.is_object() &&
-					inst.type.kind() != TypeKind::F80 && worth_moving(inst, calls) && (certain || speculable(inst));
+					inst.type.kind() != TypeKind::F80 &&
+					(worth_moving(inst, calls) || (feeders && (feeds_[inst.result] & 2) != 0)) &&
+					(certain || speculable(inst));
 				if (move)
 					for_each_operand(body_, inst, [&](const Value& v) { move = move && invariant(loop, v); });
 				if (!move)

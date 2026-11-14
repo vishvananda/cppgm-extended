@@ -1,0 +1,53 @@
+global @seen : f64 = 0
+
+function @note(%v : f64) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %old = load f64 @seen
+    %new = binary add f64 %v, %old
+    store f64 %new, @seen
+    return void
+}
+function @quotient(%row : i64, %half : f64, %height : f64, %n : i64) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %y = convert sitofp f64 i64 %row
+    %centered = binary sub f64 %y, %half
+    %scaled = binary div f64 %centered, %height
+    jump ^loop
+
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^loop: %next]
+    %x = convert sitofp f64 i64 %i
+    %v = binary add f64 %scaled, %x
+    call void @note(%v)
+    %next = binary add nowrap i64 %i, 1
+    %again = cmp lt i64 %next, %n
+    branch %again, ^loop, ^done
+
+  block ^done:
+    return void
+}
+function @offset(%a : f64, %b : f64, %n : i64) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^loop: %next]
+    %base = binary add f64 %a, %b
+    %x = convert sitofp f64 i64 %i
+    %v = binary add f64 %base, %x
+    call void @note(%v)
+    %next = binary add nowrap i64 %i, 1
+    %again = cmp lt i64 %next, %n
+    branch %again, ^loop, ^done
+
+  block ^done:
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    call void @quotient(6, 2.0, 4.0, 3)
+    call void @offset(1.0, 2.0, 2)
+    %seen = load f64 @seen
+    %t = convert fptosi i32 f64 %seen
+    return i32 %t
+}
