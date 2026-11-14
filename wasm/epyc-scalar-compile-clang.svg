@@ -1,10 +1,10 @@
-<svg data-original-label="Wasm scalar compile vs Clang; AMD EPYC 7763 64-Core Processor; revision 9ed2f1eea641727dd56efede0b4ca09c045e9f7f" data-original-message="10.17×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="Wasm scalar compile vs Clang; AMD EPYC 7763 64-Core Processor; revision 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; measured 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; 4 commits behind main: 10.17×">
-  <title>Wasm scalar compile vs Clang; AMD EPYC 7763 64-Core Processor; revision 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; measured 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; 4 commits behind main: 10.17×</title>
+<svg data-original-label="Wasm scalar compile vs Clang; AMD EPYC 9V45 96-Core Processor; revision a649ddb21dd810338ac87d93e7d2e713d0f98ab1" data-original-message="8.42×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="Wasm scalar compile vs Clang; AMD EPYC 9V45 96-Core Processor; revision a649ddb21dd810338ac87d93e7d2e713d0f98ab1; measured a649ddb21dd810338ac87d93e7d2e713d0f98ab1; 0 commits behind main: 8.42×">
+  <title>Wasm scalar compile vs Clang; AMD EPYC 9V45 96-Core Processor; revision a649ddb21dd810338ac87d93e7d2e713d0f98ab1; measured a649ddb21dd810338ac87d93e7d2e713d0f98ab1; 0 commits behind main: 8.42×</title>
   <defs><clipPath id="badge"><rect width="120" height="24" rx="4"/></clipPath></defs>
   <g clip-path="url(#badge)">
     <rect width="64" height="24" fill="#555"/>
     <rect x="64" width="56" height="24" fill="#14532d"/>
   </g>
   <text x="32" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" textLength="31" lengthAdjust="spacingAndGlyphs">EPYC</text>
-  <text x="92" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="44" lengthAdjust="spacingAndGlyphs">10.17×</text>
+  <text x="92" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="39" lengthAdjust="spacingAndGlyphs">8.42×</text>
 </svg>
