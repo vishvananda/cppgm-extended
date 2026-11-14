@@ -137,6 +137,9 @@ const uint32_t kEhRegionCost = 6;
 // A read-modify-write atomic's size in non_growing: the locked instruction
 // and the moves around it.
 const uint32_t kAtomicCost = 4;
+// The high half of the product of two extended words (the selector's
+// find_high_products): a move and one multiply.
+const uint32_t kHighProductCost = 2;
 
 // Conservative scalar estimate. Unknown operations are unpriced rather than
 // silently treated as one scalar instruction.
@@ -523,6 +526,58 @@ void call_cost_after_constants(
 	unpriced = entry.unpriced[side];
 }
 
+// The product `inst` takes the high half of, when `inst` is `trunc i64
+// (ushr|shr i128 (mul i128 x, y), 64)` with x and y both zero or both sign
+// extensions of narrower values (or literals that are) and the shift and
+// the product in one block: the selector's one multiply when each is read
+// once (find_high_products). kNoId otherwise.
+InstId high_product(const FunctionBody& body, const Instruction& inst)
+{
+	if (inst.op != Opcode::Convert || static_cast<ConvertOp>(inst.sub) != ConvertOp::Trunc ||
+		inst.type.kind() != TypeKind::I64 || convert_source_type(inst).kind() != TypeKind::I128)
+		return kNoId;
+	auto definition = [&](Value v) {
+		return v.is(ValueKind::Temp) && v.index >= body.parameter_count ? body.temps[v.index].def : kNoId;
+	};
+	const InstId s = definition(inst.ops[0]);
+	if (s == kNoId)
+		return kNoId;
+	const Instruction& shift = body.instructions[s];
+	const BinaryOp op = static_cast<BinaryOp>(shift.sub);
+	if (shift.op != Opcode::Binary || (op != BinaryOp::UShr && op != BinaryOp::Shr) ||
+		!shift.ops[1].is(ValueKind::Integer) || body.literals[shift.ops[1].index].low != 64 ||
+		body.literals[shift.ops[1].index].high != 0)
+		return kNoId;
+	const InstId m = definition(shift.ops[0]);
+	if (m == kNoId || body.instructions[m].op != Opcode::Binary ||
+		static_cast<BinaryOp>(body.instructions[m].sub) != BinaryOp::Mul)
+		return kNoId;
+	// The extensions a factor may be: bit 0 zero, bit 1 sign.
+	auto kinds = [&](Value v) -> unsigned {
+		if (v.is(ValueKind::Integer))
+		{
+			const Literal& bits = body.literals[v.index];
+			const uint64_t sign = (bits.low >> 63) != 0 ? ~uint64_t(0) : 0;
+			return (bits.high == 0 ? 1u : 0u) | (bits.high == sign ? 2u : 0u);
+		}
+		const InstId e = definition(v);
+		if (e == kNoId || body.instructions[e].op != Opcode::Convert ||
+			!convert_source_type(body.instructions[e]).is_integer() ||
+			convert_source_type(body.instructions[e]).kind() == TypeKind::I128)
+			return 0;
+		const ConvertOp extension = static_cast<ConvertOp>(body.instructions[e].sub);
+		return extension == ConvertOp::ZExt ? 1u : extension == ConvertOp::SExt ? 2u : 0u;
+	};
+	// One block: the product, then the shift, then the truncation.
+	bool together = false;
+	for (InstId i = m; i != kNoId && !together; i = body.instructions[i].next)
+		together = i == s;
+	for (InstId i = s; i != kNoId && together; i = body.instructions[i].next)
+		if (&body.instructions[i] == &inst)
+			return (kinds(body.instructions[m].ops[0]) & kinds(body.instructions[m].ops[1])) != 0 ? m : kNoId;
+	return kNoId;
+}
+
 template<bool source_required = false>
 Shape shape_of(
 	const Program& program, SymbolId symbol, const std::vector<uint8_t>& nounwind, const CallGraph* graph = nullptr)
@@ -542,6 +597,7 @@ Shape shape_of(
 	uint32_t result_literal = kNoId;
 	uint32_t cheap = 0;
 	std::vector<TempId> address_candidates;
+	std::vector<InstId> high_products;
 	const bool wasm = target_model::is_wasm(program.target);
 	auto inline_instruction_cost = [wasm](const Instruction& inst) {
 		return wasm ? wasm_inline_instruction_cost(inst) : native_inline_instruction_cost(inst);
@@ -568,6 +624,9 @@ Shape shape_of(
 				if (candidate)
 					address_candidates.push_back(inst.result);
 			}
+
+			if (inst.op == Opcode::Convert && !source_required && !wasm && high_product(body, inst) != kNoId)
+				high_products.push_back(i);
 
 			has_predictions = has_predictions ||
 				(inst.op == Opcode::Branch && inst.sub != static_cast<uint8_t>(BranchPrediction::None));
@@ -654,34 +713,64 @@ Shape shape_of(
 		}
 	}
 
-	std::vector<uint8_t> folded_addresses;
+	std::vector<uint8_t> folded;
 	if (!address_candidates.empty())
 	{
-		folded_addresses.assign(body.temps.size(), 0);
+		folded.assign(body.temps.size(), 0);
 		for (TempId t : address_candidates)
-			folded_addresses[t] = 1;
+			folded[t] = 1;
 		for (BlockId b : body.layout)
 			for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
 			{
 				const Instruction& inst = body.instructions[i];
 				for_each_operand(body, inst, [&](const Value& v) {
-					if (!v.is(ValueKind::Temp) || folded_addresses[v.index] == 0)
+					if (!v.is(ValueKind::Temp) || folded[v.index] == 0)
 						return;
 					const bool address = (inst.op == Opcode::Load && v == inst.ops[0]) ||
 						(inst.op == Opcode::Store && v == inst.ops[1] && !(v == inst.ops[0]));
-					folded_addresses[v.index] = address && folded_addresses[v.index] == 1 ? 2 : 3;
+					folded[v.index] = address && folded[v.index] == 1 ? 2 : 3;
 				});
 			}
 		for (TempId t : address_candidates)
 		{
-			folded_addresses[t] = folded_addresses[t] == 2 ? 1 : 0;
-			shape.cost -= folded_addresses[t];
+			folded[t] = folded[t] == 2 ? 1 : 0;
+			shape.cost -= folded[t];
+		}
+	}
+	// A high product is its multiply (mark 2): the shift emits nothing, nor
+	// does an extension the product alone reads.
+	if (!high_products.empty())
+	{
+		std::vector<uint32_t> uses(body.temps.size(), 0);
+		for (BlockId b : body.layout)
+			for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+				for_each_operand(body, body.instructions[i], [&](const Value& v) {
+					if (v.is(ValueKind::Temp))
+						++uses[v.index];
+				});
+		if (folded.empty())
+			folded.assign(body.temps.size(), 0);
+		for (InstId i : high_products)
+		{
+			const Instruction& shift = body.instructions[body.temps[body.instructions[i].ops[0].index].def];
+			const Instruction& product = body.instructions[high_product(body, body.instructions[i])];
+			if (uses[shift.result] != 1 || uses[product.result] != 1)
+				continue;
+			uint32_t saved = inline_instruction_cost(shift) + inline_instruction_cost(product) - kHighProductCost;
+			folded[shift.result] = 1;
+			folded[product.result] = 2;
+			for (unsigned k = 0; k < 2; ++k)
+				if (product.ops[k].is(ValueKind::Temp) && uses[product.ops[k].index] == 1)
+				{
+					saved += inline_instruction_cost(body.instructions[body.temps[product.ops[k].index].def]);
+					folded[product.ops[k].index] = 1;
+				}
+			shape.cost -= saved;
 		}
 	}
 	auto priced_instruction = [&](const Instruction& inst) {
-		return inst.result != kNoId && !folded_addresses.empty() && folded_addresses[inst.result] != 0
-			? uint32_t(0)
-			: inline_instruction_cost(inst);
+		const uint8_t mark = inst.result != kNoId && !folded.empty() ? folded[inst.result] : 0;
+		return mark == 1 ? uint32_t(0) : mark == 2 ? kHighProductCost : inline_instruction_cost(inst);
 	};
 	if (shape.returns > 1)
 		shape.cost += 2 * (shape.returns - 1);
