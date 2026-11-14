@@ -1,10 +1,10 @@
-<svg data-original-label="godot runtime-gcc; AMD EPYC 9V74 80-Core Processor; revision 9ed2f1eea641727dd56efede0b4ca09c045e9f7f" data-original-message="0.98×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="godot runtime-gcc; AMD EPYC 9V74 80-Core Processor; revision 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; measured 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; 4 commits behind main: 0.98×">
-  <title>godot runtime-gcc; AMD EPYC 9V74 80-Core Processor; revision 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; measured 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; 4 commits behind main: 0.98×</title>
+<svg data-original-label="godot runtime-gcc; AMD EPYC 7763 64-Core Processor; revision a649ddb21dd810338ac87d93e7d2e713d0f98ab1" data-original-message="1.06×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="godot runtime-gcc; AMD EPYC 7763 64-Core Processor; revision a649ddb21dd810338ac87d93e7d2e713d0f98ab1; measured a649ddb21dd810338ac87d93e7d2e713d0f98ab1; 0 commits behind main: 1.06×">
+  <title>godot runtime-gcc; AMD EPYC 7763 64-Core Processor; revision a649ddb21dd810338ac87d93e7d2e713d0f98ab1; measured a649ddb21dd810338ac87d93e7d2e713d0f98ab1; 0 commits behind main: 1.06×</title>
   <defs><clipPath id="badge"><rect width="120" height="24" rx="4"/></clipPath></defs>
   <g clip-path="url(#badge)">
     <rect width="64" height="24" fill="#555"/>
-    <rect x="64" width="56" height="24" fill="#346128"/>
+    <rect x="64" width="56" height="24" fill="#14532d"/>
   </g>
   <text x="32" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" textLength="31" lengthAdjust="spacingAndGlyphs">EPYC</text>
-  <text x="92" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="39" lengthAdjust="spacingAndGlyphs">0.98×</text>
+  <text x="92" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="39" lengthAdjust="spacingAndGlyphs">1.06×</text>
 </svg>
