@@ -261,6 +261,7 @@ pa37/benchmarks/README.md
 pa37/design-notes.md
 pa37/quality.md
 pa37/target-abi.md
+pa38/README.md
 pa4/README.md
 pa4/directives.md
 pa4/macros.md

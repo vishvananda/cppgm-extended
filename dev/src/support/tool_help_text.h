@@ -23,6 +23,8 @@ inline const char* cppgm_help_text()
 		   "   or: cppgm++ [options] <input>...\n"
 		   "\n"
 		   "emit-mode flags (every --emit-* mode):\n"
+		   "  -x c++ / -x c      input language (optional C assignment)\n"
+		   "  -std=c17 / -std=gnu17  C input profile\n"
 		   "  -I <dir> / -I<dir>  user include search path\n"
 		   "  -D <macro> / -D<macro>\n"
 		   "  -U <macro> / -U<macro>\n"

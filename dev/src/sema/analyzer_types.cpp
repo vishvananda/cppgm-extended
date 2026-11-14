@@ -1313,6 +1313,8 @@ const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const
 		return array;
 	}
 	const syntax::ParameterClause& clause = *suffix.parameters;
+	if (c_source_ && clause.parameters.empty() && !clause.ellipsis)
+		error(location, "the optional C profile requires function prototypes; use (void) for no parameters");
 	const size_t base = parameter_scratch_.size();
 	const bool void_list = clause.parameters.size == 1 && !clause.ellipsis &&
 		clause.parameters[0]->default_argument == nullptr && DeclaratorId(clause.parameters[0]->declarator) == nullptr;

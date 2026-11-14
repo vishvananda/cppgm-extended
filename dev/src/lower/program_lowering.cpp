@@ -720,6 +720,17 @@ void ProgramLowering::simple_declaration(const syntax::SimpleDecl& decl, bool ex
 		// A tuple-like structured binding's name is a reference variable
 		// bound to the get<i>(e) the analysis made (C++17's 11.5p3; an
 		// array's or class's names declare no variable).
+		if (analyzer_->c_source() && init.initializer == nullptr)
+		{
+			// The analyzed C entity knows whether a full initializer occurs
+			// later. A remaining tentative definition emits zero storage once
+			// per translation unit, using the existing entity-symbol index.
+			if (!variable->c_tentative)
+				continue;
+			const uint32_t earlier = symbols_.find(variable);
+			if (earlier != PointerMap::kMissing && program_.symbols[earlier].kind != lowir::SymbolKind::Unresolved)
+				continue;
+		}
 		define_variable(variable, sema::VariableInitializer(variable, init.initializer), location);
 	}
 }

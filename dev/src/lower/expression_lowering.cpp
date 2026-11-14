@@ -457,6 +457,13 @@ RValue FunctionLowering::rvalue(const syntax::Expr& expr)
 			program_.pointer_type() };
 	case syntax::ExprKind::KeywordLiteral:
 		return keyword_literal(static_cast<const syntax::KeywordLiteralExpr&>(*e));
+	case syntax::ExprKind::Assign:
+	{
+		const syntax::BinaryExpr& assigned = static_cast<const syntax::BinaryExpr&>(*e);
+		if ((WithoutParentheses(assigned.left)->facts->flags & sema::kBitField) != 0)
+			return bit_field_assignment(assigned);
+		return (assigned.op == TokenKind::OP_ASS ? assignment(assigned) : compound_assignment(assigned)).known;
+	}
 	case syntax::ExprKind::Binary:
 		return binary_expression(static_cast<const syntax::BinaryExpr&>(*e));
 	case syntax::ExprKind::Unary:
@@ -1780,7 +1787,7 @@ RValue FunctionLowering::comparison(const syntax::BinaryExpr& expr, const RValue
 	if (expr.facts->type->unqualified->kind == sema::TypeKind::Vector)
 		return vector_compare(expr, left, right);
 	if (type->unqualified->kind == sema::TypeKind::Complex)
-		return complex_equal(expr.op == TokenKind::OP_EQ, type, left, right);
+		return logical_result(complex_equal(expr.op == TokenKind::OP_EQ, type, left, right), expr.facts->type);
 	const bool pointer = IsPointerType(type) || IsNullptrType(type);
 	const bool is_unsigned = pointer || (!sema::IsFloating(type) && !IsSigned(type));
 	lowir::ComparePredicate predicate = lowir::ComparePredicate::Eq;
@@ -1810,8 +1817,9 @@ RValue FunctionLowering::comparison(const syntax::BinaryExpr& expr, const RValue
 		return member_pointer_equal(left, right, predicate == lowir::ComparePredicate::Eq);
 	if (left.type.is_object() && SoftFloatOf(type) != SoftFloat::None)
 		return soft_compare(predicate, SoftFloatOf(type), left, right);
-	return compare(
-		predicate, pointer ? left.type : ComparisonType(left.type, lowering_.storage_type(type)), left, right);
+	return logical_result(
+		compare(predicate, pointer ? left.type : ComparisonType(left.type, lowering_.storage_type(type)), left, right),
+		expr.facts->type);
 }
 
 Place FunctionLowering::assignment(const syntax::BinaryExpr& expr)
@@ -1963,6 +1971,11 @@ RValue FunctionLowering::unary_expression(const syntax::UnaryExpr& expr)
 {
 	switch (expr.op)
 	{
+	case TokenKind::OP_INC:
+	case TokenKind::OP_DEC:
+		if ((WithoutParentheses(expr.operand)->facts->flags & sema::kBitField) != 0)
+			return bit_field_increment(expr, true);
+		return prefix_increment(expr).known;
 	case TokenKind::OP_AMP:
 	{
 		if (expr.facts->type != nullptr && expr.facts->type->unqualified->kind == sema::TypeKind::MemberPointer)
@@ -1981,7 +1994,7 @@ RValue FunctionLowering::unary_expression(const syntax::UnaryExpr& expr)
 			return member_pointer_null(value, true);
 		const RValue zero = value.type.is_float() ? floating(value.type, lowir::float_literal(value.type.kind(), 0.0L))
 												  : integer(value.type, 0);
-		return compare(lowir::ComparePredicate::Eq, value.type, value, zero);
+		return logical_result(compare(lowir::ComparePredicate::Eq, value.type, value, zero), expr.facts->type);
 	}
 	case TokenKind::OP_PLUS:
 		if (bfloat_operation(expr))
@@ -2020,7 +2033,12 @@ RValue FunctionLowering::stepped(const RValue& value, const sema::Type* type, bo
 		return pointer_offset(value, integer(lowir::Type::scalar(lowir::TypeKind::I64), 1),
 			lowering_.graph().types.fundamental(FundamentalType::LongInt), type, decrement, true, location);
 	if (IsBoolType(type))
+	{
+		if (decrement)
+			return convert_op(lowir::ConvertOp::Trunc, value.type,
+				compare(lowir::ComparePredicate::Eq, value.type, value, integer(value.type, 0)));
 		return integer(value.type, 1);
+	}
 	if (type->kind == sema::TypeKind::Complex)
 	{
 		// GNU: the real part stepped.

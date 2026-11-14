@@ -928,7 +928,7 @@ ExprFacts* Analyzer::conditional(const syntax::ConditionalExpr& expr, Scope* sco
 	}
 	// p4: glvalues of one category and type; p3 with cv-qualified
 	// variants: the less qualified converts to the more qualified.
-	if (second->category == third->category && second->category != ValueCategory::PRValue &&
+	if (!c_source_ && second->category == third->category && second->category != ValueCategory::PRValue &&
 		t2->unqualified == t3->unqualified && (t2->cv & t3->cv) == (t2->cv < t3->cv ? t2->cv : t3->cv))
 	{
 		const Type* type = (t2->cv & ~t3->cv) == 0 ? t3 : t2;

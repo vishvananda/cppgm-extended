@@ -1,0 +1,1 @@
+{"source":true,"wasi":true,"target":"wasm32-wasip1","flags":["-x","c","-std=c17"],"units":["300-object-link.t.1"],"commands":[{"exit":0,"stdout":""}]}

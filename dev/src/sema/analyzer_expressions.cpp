@@ -1335,6 +1335,12 @@ ExprFacts* Analyzer::combine(const syntax::BinaryExpr& expr, Scope* scope)
 		potential_use(*expr.left, nullptr, true);
 		check_temporary_destruction(left, expr.left->location);
 		ExprFacts* right = facts_of(*expr.right);
+		if (c_source_)
+		{
+			const Type* result = decayed(right);
+			convert_operand(*expr.right, result);
+			return new_facts(expr, result, ValueCategory::PRValue);
+		}
 		ExprFacts* facts = new_facts(expr, right->type, right->category);
 		facts->flags = right->flags & kBitField;
 		facts->potential_result = right->potential_result;
@@ -1349,7 +1355,8 @@ ExprFacts* Analyzer::combine(const syntax::BinaryExpr& expr, Scope* scope)
 		if (!check_resolved(*expr.right))
 			return nullptr;
 		convert_to_bool(*expr.right);
-		return new_facts(expr, types_.fundamental(FundamentalType::Bool), ValueCategory::PRValue);
+		return new_facts(
+			expr, types_.fundamental(c_source_ ? FundamentalType::Int : FundamentalType::Bool), ValueCategory::PRValue);
 	case TokenKind::OP_ARROWSTAR:
 		if (!check_resolved(*expr.right))
 			return nullptr;
@@ -1673,7 +1680,7 @@ bool Analyzer::scalar_splats(const syntax::Expr& scalar, const Type* type, const
 ExprFacts* Analyzer::comparison(const syntax::BinaryExpr& expr, ExprFacts* left, ExprFacts* right)
 {
 	// 5.9, 5.10.
-	const Type* boolean = types_.fundamental(FundamentalType::Bool);
+	const Type* boolean = types_.fundamental(c_source_ ? FundamentalType::Int : FundamentalType::Bool);
 	const Type* lt = decayed(left);
 	const Type* rt = decayed(right);
 	const bool equality = expr.op == TokenKind::OP_EQ || expr.op == TokenKind::OP_NE;
@@ -1828,7 +1835,8 @@ ExprFacts* Analyzer::assignment(const syntax::BinaryExpr& expr, Scope* scope)
 	{
 		if (convert(*expr.right, type->unqualified, false) == nullptr)
 			return nullptr;
-		ExprFacts* facts = new_facts(expr, type, ValueCategory::LValue);
+		ExprFacts* facts = new_facts(
+			expr, c_source_ ? type->unqualified : type, c_source_ ? ValueCategory::PRValue : ValueCategory::LValue);
 		facts->flags = left->flags & kBitField;
 		return facts;
 	}
@@ -1913,7 +1921,8 @@ ExprFacts* Analyzer::assignment(const syntax::BinaryExpr& expr, Scope* scope)
 		convert_operand(*expr.right, common);
 		operation = shift ? promoted(promoted_left) : common;
 	}
-	ExprFacts* facts = new_facts(expr, type, ValueCategory::LValue);
+	ExprFacts* facts = new_facts(
+		expr, c_source_ ? type->unqualified : type, c_source_ ? ValueCategory::PRValue : ValueCategory::LValue);
 	facts->flags = left->flags & kBitField;
 	facts->target = operation;
 	return facts;
@@ -1967,7 +1976,8 @@ ExprFacts* Analyzer::unary(const syntax::UnaryExpr& expr, Scope* scope)
 	}
 	case TokenKind::OP_LNOT:
 		convert_to_bool(*expr.operand);
-		return new_facts(expr, types_.fundamental(FundamentalType::Bool), ValueCategory::PRValue);
+		return new_facts(
+			expr, types_.fundamental(c_source_ ? FundamentalType::Int : FundamentalType::Bool), ValueCategory::PRValue);
 	case TokenKind::OP_PLUS:
 		if (IsPointer(type))
 		{
@@ -2223,7 +2233,8 @@ ExprFacts* Analyzer::increment(const syntax::UnaryExpr& expr, Scope* scope)
 	const Type* type = operand->type;
 	const bool decrement = expr.op == TokenKind::OP_DEC;
 	// GNU: a complex operand's real part is stepped.
-	if (IsBoolType(type) ? decrement : !(IsArithmetic(type) || IsObjectPointer(type) || IsComplex(type)))
+	if (IsBoolType(type) ? (!c_source_ && decrement)
+						 : !(IsArithmetic(type) || IsObjectPointer(type) || IsComplex(type)))
 	{
 		substitution_error(expr.location, "invalid operand of increment or decrement");
 		return nullptr;
@@ -2232,7 +2243,8 @@ ExprFacts* Analyzer::increment(const syntax::UnaryExpr& expr, Scope* scope)
 		return nullptr;
 	if (expr.kind == syntax::ExprKind::Postfix)
 		return new_facts(expr, type->unqualified, ValueCategory::PRValue);
-	ExprFacts* facts = new_facts(expr, type, ValueCategory::LValue);
+	ExprFacts* facts = new_facts(
+		expr, c_source_ ? type->unqualified : type, c_source_ ? ValueCategory::PRValue : ValueCategory::LValue);
 	facts->flags = operand->flags & kBitField;
 	return facts;
 }

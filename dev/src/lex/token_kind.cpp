@@ -293,6 +293,69 @@ bool FindSimpleToken(const char* spelling, uint32_t length, TokenKind& kind)
 	return true;
 }
 
+bool FindCKeyword(const char* spelling, uint32_t length, TokenKind& kind)
+{
+	if (FindSimpleToken(spelling, length, kind))
+	{
+		switch (kind)
+		{
+		case TokenKind::KW_AUTO:
+			kind = TokenKind::KW_REGISTER;
+			return true;
+		case TokenKind::KW_BREAK:
+		case TokenKind::KW_CASE:
+		case TokenKind::KW_CHAR:
+		case TokenKind::KW_CONST:
+		case TokenKind::KW_CONTINUE:
+		case TokenKind::KW_DEFAULT:
+		case TokenKind::KW_DO:
+		case TokenKind::KW_DOUBLE:
+		case TokenKind::KW_ELSE:
+		case TokenKind::KW_ENUM:
+		case TokenKind::KW_EXTERN:
+		case TokenKind::KW_FLOAT:
+		case TokenKind::KW_FOR:
+		case TokenKind::KW_GOTO:
+		case TokenKind::KW_IF:
+		case TokenKind::KW_INLINE:
+		case TokenKind::KW_INT:
+		case TokenKind::KW_LONG:
+		case TokenKind::KW_REGISTER:
+		case TokenKind::KW_RETURN:
+		case TokenKind::KW_SHORT:
+		case TokenKind::KW_SIGNED:
+		case TokenKind::KW_SIZEOF:
+		case TokenKind::KW_STATIC:
+		case TokenKind::KW_STRUCT:
+		case TokenKind::KW_SWITCH:
+		case TokenKind::KW_TYPEDEF:
+		case TokenKind::KW_UNION:
+		case TokenKind::KW_UNSIGNED:
+		case TokenKind::KW_VOID:
+		case TokenKind::KW_VOLATILE:
+		case TokenKind::KW_WHILE:
+			return true;
+		default:
+			break;
+		}
+	}
+	const struct
+	{
+		const char* name;
+		TokenKind kind;
+	} words[] = { { "_Bool", TokenKind::KW_BOOL }, { "_Static_assert", TokenKind::KW_STATIC_ASSERT },
+		{ "_Alignas", TokenKind::KW_ALIGNAS }, { "_Alignof", TokenKind::KW_ALIGNOF },
+		{ "_Thread_local", TokenKind::KW_THREAD_LOCAL } };
+	if (length > 1 && spelling[0] == '_')
+		for (const auto& word : words)
+			if (std::strlen(word.name) == length && std::memcmp(word.name, spelling, length) == 0)
+			{
+				kind = word.kind;
+				return true;
+			}
+	return false;
+}
+
 bool IsAssignmentOperator(TokenKind kind)
 {
 	switch (kind)

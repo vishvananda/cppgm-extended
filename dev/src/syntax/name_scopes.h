@@ -103,9 +103,9 @@ struct NameBinding
 		: category(NameCategory::None), pack(false), parameter(false), conflicted(false), alternatives(0), flags(0),
 		  scope(nullptr)
 	{}
-	NameBinding(NameCategory category, bool pack, Scope* scope, bool parameter = false)
-		: category(category), pack(pack), parameter(parameter), conflicted(false), alternatives(0), flags(0),
-		  scope(scope)
+	NameBinding(NameCategory category, bool pack, Scope* scope, bool parameter = false, bool tag = false)
+		: category(category), pack(pack), parameter(parameter), conflicted(false), alternatives(0),
+		  flags(tag ? kTag : 0), scope(scope)
 	{}
 
 	NameCategory category;
@@ -135,6 +135,7 @@ struct NameBinding
 	// A non-template alias naming a class-template specialization, even
 	// when no argument record is needed for parameter bases.
 	static const uint8_t kSpecialization = 4;
+	static const uint8_t kTag = 8;
 	uint8_t flags;
 	bool approximate() const { return (flags & kApproximate) != 0; }
 	bool dependent() const { return (flags & kDependent) != 0; }

@@ -46,6 +46,7 @@ int run_toolchain(const std::vector<std::string>& args, const PreprocessorOption
 
 // Select the supported language mode and the host macro dialect.
 void language_standard(const std::string& standard, PreprocessorOptions& options);
+void configure_source_language(const std::string& language, const std::string& standard, PreprocessorOptions& options);
 
 // Enable an SSE extension and its prerequisites, or disable it and dependents.
 bool sse_option(const std::string& option, uint8_t& level);

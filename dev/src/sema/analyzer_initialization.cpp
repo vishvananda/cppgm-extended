@@ -227,6 +227,8 @@ bool Analyzer::nontrivial_destruction(const Type* type)
 
 void Analyzer::default_initialize(VariableEntity* variable, const Type* type, uint32_t location)
 {
+	if (c_source_)
+		return;
 	// 8.5p6: a class object's default constructor runs (for an array, each
 	// element's), accessible at the declaration (12p4); a const object of
 	// other type needs an initializer.

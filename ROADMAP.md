@@ -23,6 +23,7 @@ under `dev/` and `dev/src/`.
 | PA35 | staged self-host ladder and inception |
 | PA36 | optimizing the compiler: generated code against its own host-built seed and GCC, compile speed against the host |
 | PA37 | wasm32 backend, reusable machine representations, target layout, ABI and module interoperability |
+| PA38 (optional) | C frontend using the existing typed LowIR boundary |
 
 ## PA9 ABI Boundary
 

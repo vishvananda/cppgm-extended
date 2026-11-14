@@ -45,6 +45,7 @@ jobs:
             CPPGM_REFERENCE_BUNDLE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${VERSION_TAG}/$(basename "$bundle")" \
             scripts/export_student_repo.sh --force "$RUNNER_TEMP/student-export"
           python3 scripts/check_exported_reference_binaries.py "$RUNNER_TEMP/student-export" --bundle "$bundle"
+          make -C pa38 test CPPGM_SKIP_DEV_REBUILD=1
           cp "$RUNNER_TEMP/student-export/reference-binaries/manifest.tsv" "$RUNNER_TEMP/upload/native-reference-manifest.tsv"
           make test-harness
       - uses: actions/upload-artifact@v6

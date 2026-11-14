@@ -484,6 +484,18 @@ bool Parser::parse_decl_specifiers(ListFrame<DeclSpecifier>& list, SpecifierInfo
 		if (standard && standard_after == 0)
 			standard_after = list.size();
 		const ParseToken token = tok();
+		if (c_source_ && token.is_identifier() && gnu_names_.kind(token.identifier) == GnuNames::kCNoReturn)
+		{
+			Attribute* attribute = make<Attribute>();
+			*attribute = Attribute();
+			attribute->kind = AttributeKind::NoReturn;
+			attribute->location = location();
+			attribute->standard = true;
+			attribute->next = pending_attributes_;
+			pending_attributes_ = attribute;
+			next();
+			continue;
+		}
 		if (token.kind == ParseTokenKind::Simple)
 		{
 			const TokenKind kind = token.simple;
@@ -729,6 +741,8 @@ bool Parser::parse_typeof_specifier(ListFrame<DeclSpecifier>& list, SpecifierInf
 
 bool Parser::parse_named_type_specifier(ListFrame<DeclSpecifier>& list, SpecifierInfo& info)
 {
+	if (c_source_ && tok().is_identifier() && (scopes_.lookup(tok().identifier, false).flags & NameBinding::kTag) != 0)
+		return false;
 	if (at(TokenKind::KW_DECLTYPE) && at(TokenKind::OP_LPAREN, 1) && at(TokenKind::KW_AUTO, 2) &&
 		at(TokenKind::OP_RPAREN, 3))
 	{
@@ -924,7 +938,7 @@ bool Parser::parse_class_or_enum_specifier(ListFrame<DeclSpecifier>& list, Speci
 			// a same-scope object or function keeps hiding it (3.3.10p2).
 			if (scopes_.own(declaration_scope(), identifier).category == NameCategory::None)
 				scopes_.declare(declaration_scope(), identifier,
-					NameBinding{ NameCategory::Type, false, class_scope_ahead(identifier) });
+					NameBinding{ NameCategory::Type, false, class_scope_ahead(identifier), false, c_source_ });
 			list.push(specifier);
 			return true;
 		}
@@ -951,7 +965,7 @@ bool Parser::parse_class_or_enum_specifier(ListFrame<DeclSpecifier>& list, Speci
 			Scope* where = declaration_scope();
 			while (where->parent != nullptr && where->kind != ScopeKind::Namespace && where->kind != ScopeKind::Block)
 				where = where->parent;
-			scopes_.declare(where, identifier, NameBinding{ NameCategory::Type, false, declared });
+			scopes_.declare(where, identifier, NameBinding{ NameCategory::Type, false, declared, false, c_source_ });
 			info.type_scope = declared;
 		}
 	}
@@ -1059,8 +1073,8 @@ ClassSpecifier* Parser::parse_class_body(
 	{
 		// The injected-class-name (9p2).
 		scopes_.declare(scope, class_identifier,
-			NameBinding{
-				is_template || specialization ? NameCategory::TypeTemplate : NameCategory::Type, false, scope });
+			NameBinding{ is_template || specialization ? NameCategory::TypeTemplate : NameCategory::Type, false, scope,
+				false, c_source_ });
 	}
 
 	if (at(TokenKind::OP_COLON))
@@ -1158,8 +1172,10 @@ void Parser::declare_class(const Identifier* name, bool is_template, Scope* scop
 	if (existing.scope != nullptr && existing.scope != scope &&
 		(existing.category == NameCategory::TypeTemplate || existing.category == NameCategory::Type))
 		scopes_.add_edge(scope, existing.scope);
-	scopes_.declare(
-		where, name, NameBinding{ is_template ? NameCategory::TypeTemplate : NameCategory::Type, false, scope });
+	NameBinding binding{ is_template ? NameCategory::TypeTemplate : NameCategory::Type, false, scope };
+	if (c_source_)
+		binding.flags |= NameBinding::kTag;
+	scopes_.declare(where, name, binding);
 }
 
 bool Parser::parse_base_clause(ListFrame<BaseSpecifier>& bases, Scope* class_scope, bool primary_template)
@@ -1310,7 +1326,8 @@ EnumSpecifier* Parser::parse_enum_specifier(TypeIdContext context)
 			const NameBinding existing = scopes_.own(scope, simple_name);
 			if (existing.category != NameCategory::Type && existing.category != NameCategory::Value &&
 				existing.category != NameCategory::FunctionTemplate)
-				scopes_.declare(scope, simple_name, NameBinding{ NameCategory::Type, false, nullptr });
+				scopes_.declare(
+					scope, simple_name, NameBinding{ NameCategory::Type, false, nullptr, false, c_source_ });
 		}
 		return specifier;
 	}
@@ -1319,7 +1336,7 @@ EnumSpecifier* Parser::parse_enum_specifier(TypeIdContext context)
 	scopes_.set_current(enclosing);
 	Scope* members = declaration_scope();
 	if (simple_name != nullptr)
-		scopes_.declare(members, simple_name, NameBinding{ NameCategory::Type, false, scope });
+		scopes_.declare(members, simple_name, NameBinding{ NameCategory::Type, false, scope, false, c_source_ });
 	next();
 	ListFrame<Enumerator> enumerators(enumerators_);
 	while (!at(TokenKind::OP_RBRACE))

@@ -243,6 +243,12 @@ URL before pushing the student repository.
 
 ## Reference and version exports
 
+PA38 is the optional C frontend assignment. `make test-pa38` compares `.t`
+inputs with normal LowIR references and runs the assignment's behavior controls
+through the supplied backend. `make -C pa38 test-wasm` runs the same C sources
+against their expected Wasm results. Neither lane compares against an external
+C compiler. PA38 is excluded from the default C++ report; CI runs it separately.
+
 The assignment export workflow builds Linux x86_64 reference tools and a
 separate WASI bundle containing all nine tools. The WASI job uses the pinned
 WASI SDK, compiles with cppgm at O3, runs the tools with Wasmtime, and compares

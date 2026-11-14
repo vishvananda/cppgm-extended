@@ -9,9 +9,9 @@ PPLexer::PPLexer(const SourceBuffer& source, const PPLexerOptions& options)
 	: source_(source), reader_(source, !options.token_text, options.crlf_splices),
 	  cur_(reader_.logical(source.begin_offset())), token_(), token_begin_(0), clean_end_(0), token_end_(0),
 	  base_(options.location_base), dirty_(false), header_names_on_request_(options.header_names_on_request),
-	  binary_exponents_(options.binary_exponents), digit_separators_(options.digit_separators),
-	  legacy_comment_bytes_(options.legacy_comment_bytes), lone_quotes_(options.lone_quotes),
-	  gnu_escapes_(options.gnu_escapes),
+	  c_source_(options.c_source), binary_exponents_(options.binary_exponents),
+	  digit_separators_(options.digit_separators), legacy_comment_bytes_(options.legacy_comment_bytes),
+	  lone_quotes_(options.lone_quotes), gnu_escapes_(options.gnu_escapes),
 	  context_(options.header_names_on_request ? DirectiveContext::Other : DirectiveContext::LineStart)
 {}
 
@@ -512,7 +512,7 @@ const PPToken& PPLexer::lex_identifier_or_prefixed_literal()
 	{
 		if (is_encoding_prefix())
 			return lex_quoted_literal(PPTokenKind::StringLiteral, PPTokenKind::UserDefinedStringLiteral);
-		if (is_raw_string_prefix())
+		if (!c_source_ && is_raw_string_prefix())
 			return lex_raw_string_literal();
 	}
 	else if (__builtin_expect(cur_.code_point == '\'', 0) && is_character_prefix())
@@ -520,7 +520,7 @@ const PPToken& PPLexer::lex_identifier_or_prefixed_literal()
 		return lex_quoted_literal(PPTokenKind::CharacterLiteral, PPTokenKind::UserDefinedCharacterLiteral);
 	}
 
-	const uint8_t punctuator = identifier_like_operator();
+	const uint8_t punctuator = c_source_ ? kNoPunctuator : identifier_like_operator();
 	if (__builtin_expect(punctuator != kNoPunctuator, 0))
 		return finish(PPTokenKind::PreprocessingOpOrPunc, punctuator);
 	return finish(PPTokenKind::Identifier);

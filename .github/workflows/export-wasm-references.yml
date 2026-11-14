@@ -30,7 +30,11 @@ jobs:
       - name: Install pinned WASI adapter
         run: npm ci --ignore-scripts --prefix scripts/experimental
       - name: Build the host compiler
-        run: make -C dev cppgm++ CXX=g++ CPPGM_HOST_CXX=g++
+        run: make -C dev cppgm++ lowir2native CXX=g++ CPPGM_HOST_CXX=g++
+      - name: Check the optional C assignment on Wasm
+        run: |
+          PATH="$RUNNER_TEMP/wasm-tools/bin:$PATH" \
+            make -C pa38 test-wasm CPPGM_SKIP_DEV_REBUILD=1
       - name: Build and validate all nine WASI reference tools
         run: |
           short_sha=$(git rev-parse --short=12 HEAD)

@@ -63,7 +63,7 @@ const char kNumericPredefines[] = "#define __DBL_DECIMAL_DIG__ 17\n"
 
 void add_wasm_headers(PreprocessorOptions& options, const std::string& sysroot, const std::string& resource_directory)
 {
-	if (!sysroot.empty())
+	if (!sysroot.empty() && options.language != SourceLanguage::C)
 	{
 		options.system_include_paths.push_back(
 			sysroot + "/include/wasm32-wasip1/" + (options.modes.exceptions ? "eh" : "noeh") + "/c++/v1");
@@ -86,7 +86,8 @@ void configure_wasm_environment(PreprocessorOptions& options)
 	options.host_predefines.clear();
 	options.hosted = true;
 	options.builtin_declarations = "typedef char* __builtin_va_list;\n";
-	options.builtin_declarations += builtin_template_declarations();
+	if (options.language != SourceLanguage::C)
+		options.builtin_declarations += builtin_template_declarations();
 	options.popcnt = false;
 	options.sse_level = 0;
 	std::string text = "#undef __linux__\n#undef __linux\n#undef __gnu_linux__\n#undef __ELF__\n"

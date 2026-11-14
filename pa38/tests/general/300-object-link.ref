@@ -1,0 +1,158 @@
+global @c_constant : i32 [storage=readonly, linkage=c, binding=strong] = 37
+
+function @c_transform(%value : obj<16x8> [classes=integer_sse], %callback : ptr) -> obj<16x8> [result_classes=integer_sse, linkage=c, binding=strong] {
+  slot $value : obj<16x8>
+  slot $callback : ptr
+  slot $retobj__1 : obj<16x8>
+
+  block ^entry:
+    %t1 = addr $value
+    copyobj 16x8 %value, %t1
+    store typed ptr %callback, $callback
+    %t2 = addr $value
+    %t3 = index inbounds i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = load typed ptr $callback
+    %t6 = call i32 %t5(%t4) as (%arg0 : i32) -> i32
+    %t7 = addr $value
+    %t8 = index inbounds i8 [projection=field] %t7, 0
+    store typed i32 %t6, %t8
+    %t9 = addr $value
+    %t10 = index inbounds i8 [projection=field] %t9, 8
+    %t11 = load typed f64 %t10
+    %t12 = binary mul f64 %t11, 2
+    %t13 = convert sitofp f64 i32 37
+    %t14 = binary add f64 %t12, %t13
+    %t15 = addr $value
+    %t16 = index inbounds i8 [projection=field] %t15, 8
+    store typed f64 %t14, %t16
+    %t17 = addr $retobj__1
+    %t18 = addr $value
+    copyobj 16x8 %t18, %t17
+    return obj<16x8> $retobj__1
+}
+function @c_variadic(%count : i32) -> i32 [arity=variadic, linkage=c, binding=strong] {
+  slot $count : i32
+  slot $args : obj<24x8>
+  slot $result : i32
+
+  block ^entry:
+    store typed i32 %count, $count
+    %t1 = addr $args
+    va_start %t1
+    store typed i32 0, $result
+    jump ^while_cond_1
+
+  block ^while_cond_1:
+    %t2 = load typed i32 $count
+    %t3 = binary sub nowrap i32 %t2, 1
+    store typed i32 %t3, $count
+    branch %t2, ^while_body_2, ^while_end_3
+
+  block ^while_body_2:
+    %t4 = addr $args
+    %t5 = va_arg i32 %t4
+    %t6 = load typed i32 $result
+    %t7 = binary add nowrap i32 %t6, %t5
+    store typed i32 %t7, $result
+    jump ^while_cond_1
+
+  block ^while_end_3:
+    %t8 = addr $args
+    %t9 = load typed i32 $result
+    return i32 %t9
+}
+function @triple(%value : i32) -> i32 [linkage=c, binding=internal] {
+  slot $value : i32
+
+  block ^entry:
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = binary mul nowrap i32 %t1, 3
+    return i32 %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $input : obj<16x8>
+  slot $output : obj<16x8>
+  slot $argobj__1 : obj<16x8>
+  slot $land__2 : i64
+  slot $land__3 : i64
+  slot $land__4 : i64
+
+  block ^entry:
+    %t1 = addr $input
+    %t2 = addr $input
+    %t3 = index inbounds i8 [projection=field] %t2, 0
+    store typed i32 7, %t3
+    %t4 = addr $input
+    %t5 = index inbounds i8 [projection=field] %t4, 8
+    store typed f64 2.25, %t5
+    %t6 = addr $output
+    %t7 = addr $argobj__1
+    %t8 = addr $input
+    copyobj 16x8 %t8, %t7
+    %t9 = addr @triple
+    %t10 = call obj<16x8> @c_transform($argobj__1, %t9)
+    copyobj 16x8 %t10, %t6
+    %t11 = load typed i32 @c_constant
+    %t12 = cmp eq i32 %t11, 37
+    %t13 = convert trunc i32 i64 %t12
+    branch %t13, ^land_rhs_1, ^land_short_2
+
+  block ^land_rhs_1:
+    %t14 = addr $output
+    %t15 = index inbounds i8 [projection=field] %t14, 0
+    %t16 = load typed i32 %t15
+    %t17 = cmp eq i32 %t16, 21
+    %t18 = convert trunc i32 i64 %t17
+    %t19 = cmp ne i32 %t18, 0
+    store typed i64 %t19, $land__2
+    jump ^land_end_3
+
+  block ^land_short_2:
+    store typed i64 0, $land__2
+    jump ^land_end_3
+
+  block ^land_end_3:
+    %t20 = load typed i64 $land__2
+    branch %t20, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t21 = addr $output
+    %t22 = index inbounds i8 [projection=field] %t21, 8
+    %t23 = load typed f64 %t22
+    %t24 = cmp eq f64 %t23, 41.5
+    %t25 = convert trunc i32 i64 %t24
+    %t26 = cmp ne i32 %t25, 0
+    store typed i64 %t26, $land__3
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store typed i64 0, $land__3
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t27 = load typed i64 $land__3
+    branch %t27, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t28 = convert sext i32 i8 2
+    %t29 = convert sext i32 i16 3
+    %t30 = call i32 @c_variadic(3, %t28, %t29, 4)
+    %t31 = cmp eq i32 %t30, 9
+    %t32 = convert trunc i32 i64 %t31
+    %t33 = cmp ne i32 %t32, 0
+    store typed i64 %t33, $land__4
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store typed i64 0, $land__4
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t34 = load typed i64 $land__4
+    %t35 = convert trunc i32 i64 %t34
+    %t36 = cmp eq i32 %t35, 0
+    %t37 = convert trunc i32 i64 %t36
+    return i32 %t37
+}

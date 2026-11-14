@@ -453,6 +453,11 @@ Decl* Parser::parse_static_assert()
 
 Decl* Parser::parse_linkage_specification(DeclContext context)
 {
+	if (c_source_)
+	{
+		fail();
+		return nullptr;
+	}
 	LinkageDecl* linkage = make<LinkageDecl>(DeclKind::Linkage, location());
 	next();
 	if (tok().kind == ParseTokenKind::UserDefinedLiteral)
@@ -1015,6 +1020,11 @@ Decl* Parser::finish_simple_declaration(
 	}
 	if (is_function_declarator(declarator) && at_function_body_start(false))
 	{
+		if (c_source_ && context == DeclContext::Class)
+		{
+			fail();
+			return nullptr;
+		}
 		FunctionDecl* function = make<FunctionDecl>(DeclKind::Function, start);
 		function->specifiers = specifiers;
 		function->attributes = attributes;
@@ -1053,6 +1063,11 @@ Decl* Parser::finish_simple_declaration(
 		init.first_token = first_token;
 		if (at(TokenKind::OP_ASS) || at(TokenKind::OP_LBRACE) || at(TokenKind::OP_LPAREN))
 		{
+			if (c_source_ && context == DeclContext::Class)
+			{
+				fail();
+				return nullptr;
+			}
 			const bool saved_template = pending_template_;
 			pending_template_ = false;
 			// A static data member's initializer is in the scope of its
@@ -1155,7 +1170,7 @@ Initializer* Parser::parse_initializer(bool allow_parenthesized)
 		if (initializer->expression == nullptr)
 			result = nullptr;
 	}
-	else if (allow_parenthesized && accept(TokenKind::OP_LPAREN))
+	else if (allow_parenthesized && !c_source_ && accept(TokenKind::OP_LPAREN))
 	{
 		initializer->kind = InitializerKind::Parenthesized;
 		ListFrame<Expr*> arguments(exprs_);

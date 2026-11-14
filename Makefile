@@ -62,7 +62,7 @@ export CPPGM_PROGRAM_TEST_TIMEOUT_SEC ?= 10
 DEBUGINFO_TEST_PAS ?= pa8 pa33 pa34
 
 ALL_PAS = $(patsubst %/Makefile,%,$(wildcard pa*/Makefile))
-EXPERIMENTAL_PAS ?= pa35 pa36
+EXPERIMENTAL_PAS ?= pa35 pa36 pa38
 PAS = $(filter-out $(EXPERIMENTAL_PAS),$(ALL_PAS))
 SORTED_PAS = $(shell printf '%s\n' $(PAS) | sort -t a -k 2,2n)
 TEST_REPORT_PAS ?= $(SORTED_PAS)
@@ -657,3 +657,11 @@ test-lowir-library: build lowir-library
 test-lowir-library-nobuild:
 	$(MAKE) -C pa27 test-lowir-library CPPGM_SKIP_DEV_REBUILD=1 CXX="$(CXX)" CPPGM_HOST_CXX="$(CPPGM_HOST_CXX)" CPPGM_STDLIB_FLAGS="$(CPPGM_STDLIB_FLAGS)"
 	$(MAKE) -C pa33 test-lowir-library CPPGM_SKIP_DEV_REBUILD=1 CXX="$(CXX)" CPPGM_HOST_CXX="$(CPPGM_HOST_CXX)" CPPGM_STDLIB_FLAGS="$(CPPGM_STDLIB_FLAGS)"
+
+# Optional C frontend assignment; outside the standard C++ report.
+.PHONY: test-c test-c-wasm
+test-c:
+	@$(MAKE) test-pa38
+
+test-c-wasm:
+	@$(MAKE) -C pa38 test-wasm CXX="$(CXX)" CPPGM_HOST_CXX="$(CPPGM_HOST_CXX)"

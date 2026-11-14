@@ -79,6 +79,21 @@ bool WideningFolds(ConversionContext context, const sema::Type* from, bool to_si
 
 } // namespace
 
+RValue FunctionLowering::logical_result(const RValue& value, const sema::Type* type)
+{
+	// Comparison and short-circuit instructions produce a canonical truth
+	// value. The source facts select its public type: bool in C++, int in C.
+	if (IsBoolType(type))
+		return value;
+	const lowir::Type target = lowering_.storage_type(type);
+	if (target == value.type)
+		return value;
+	return convert_op(lowir::integer_bits(target.kind()) < lowir::integer_bits(value.type.kind())
+			? lowir::ConvertOp::Trunc
+			: lowir::ConvertOp::ZExt,
+		target, value);
+}
+
 RValue FunctionLowering::fit(const RValue& value, const sema::Type* type)
 {
 	// A truth value (i64) stored as the course bool (u8).

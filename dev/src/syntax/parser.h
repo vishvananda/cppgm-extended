@@ -22,7 +22,7 @@ class Parser : public ParserState
 {
 public:
 	Parser(ParseTokenStream& tokens, IdentifierTable& identifiers, Arena& arena, bool hosted = false,
-		bool cxx14 = false, bool cxx17 = false);
+		bool cxx14 = false, bool cxx17 = false, bool c_source = false);
 
 	// The translation unit, or null after a syntax error.
 	TranslationUnit* parse_translation_unit();

@@ -196,6 +196,7 @@ struct SourceOutputInvocation
 	native::Target target = native::host_target();
 	string outfile;
 	string standard;
+	string language;
 	string sysroot;
 	string resource_directory;
 	vector<string> inputs;
@@ -289,6 +290,14 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 			consume_required_option_argument(args, i, "-o", "output file");
 			invocation.outfile = args[i];
 			explicit_outfile = true;
+			continue;
+		}
+		if (args[i] == "-x")
+		{
+			consume_required_option_argument(args, i, "-x", "language");
+			invocation.language = args[i];
+			if (invocation.language != "c" && invocation.language != "c++")
+				throw InvocationError("unsupported language: " + invocation.language);
 			continue;
 		}
 		if (args[i] == "-std" || starts_with(args[i], "-std="))
@@ -722,8 +731,7 @@ PreprocessorOptions source_preprocessor_options(const SourceOutputInvocation& in
 	options.include_paths = invocation.include_paths;
 	options.system_include_paths = invocation.system_include_paths;
 	options.command_line = invocation.command_line;
-	if (!invocation.standard.empty())
-		driver::language_standard(invocation.standard, options);
+	driver::configure_source_language(invocation.language, invocation.standard, options);
 	options.plain_char_unsigned = invocation.plain_char_unsigned;
 	options.popcnt = invocation.popcnt;
 	options.modes.exceptions = invocation.exceptions;
@@ -893,8 +901,9 @@ int run_emit_types_mode(vector<string> args)
 			try
 			{
 				sema::Analyzer analyzer(graph, unit.identifiers());
+				analyzer.set_source_language(options.language);
 				analyzer.set_hosted(options.hosted);
-				analyzer.set_cxx14(options.cplusplus != "201103L");
+				analyzer.set_cxx14(options.language != SourceLanguage::C && options.cplusplus != "201103L");
 				analyzer.set_cxx17(options.cplusplus == "201703L");
 				analyzer.set_exceptions(options.modes.exceptions);
 				analyzer.set_source_positions(&unit.positions());
@@ -976,8 +985,9 @@ int run_emit_semantics_mode(vector<string> args)
 			try
 			{
 				sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
+				analyzer.set_source_language(options.language);
 				analyzer.set_hosted(options.hosted);
-				analyzer.set_cxx14(options.cplusplus != "201103L");
+				analyzer.set_cxx14(options.language != SourceLanguage::C && options.cplusplus != "201103L");
 				analyzer.set_cxx17(options.cplusplus == "201703L");
 				analyzer.set_exceptions(options.modes.exceptions);
 				analyzer.set_source_positions(&unit.positions());
@@ -1125,8 +1135,9 @@ int run_emit_lowir_mode(vector<string> args)
 			sema::SemanticGraph graph(options.plain_char_unsigned, options.target);
 			graph.names.reserve(unit.counters().bindings);
 			sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
+			analyzer.set_source_language(options.language);
 			analyzer.set_hosted(options.hosted);
-			analyzer.set_cxx14(options.cplusplus != "201103L");
+			analyzer.set_cxx14(options.language != SourceLanguage::C && options.cplusplus != "201103L");
 			analyzer.set_cxx17(options.cplusplus == "201703L");
 			analyzer.set_exceptions(options.modes.exceptions);
 			analyzer.set_source_positions(&unit.positions());

@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "sema/analysis_records.h"
+#include "lex/source_language.h"
 #include "sema/analyzer_keys.h"
 #include "sema/constant_frames.h"
 #include "sema/constant_values.h"
@@ -54,6 +55,13 @@ public:
 	~Analyzer();
 
 	void analyze(const syntax::TranslationUnit& unit);
+	bool c_source() const { return c_source_; }
+	void set_source_language(SourceLanguage language)
+	{
+		c_source_ = language == SourceLanguage::C;
+		c_language_ = c_source_;
+		conversions_.set_c_source(c_source_);
+	}
 	// Hosted compilations take GNU's zero-length and flexible array
 	// members (see array_bound and member_size).
 	void set_hosted(bool on) { hosted_ = on; }
@@ -1980,6 +1988,7 @@ private:
 	// Inside a linkage-specification for C (7.5), directly in one that is
 	// not braced (its declaration is treated as extern, 7.5p7), and inside
 	// any linkage-specification (an explicit language linkage, 7.5p5).
+	bool c_source_;
 	bool c_language_;
 	bool linkage_extern_;
 	bool linkage_specified_;

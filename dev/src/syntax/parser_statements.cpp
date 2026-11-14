@@ -908,7 +908,7 @@ Stmt* Parser::parse_for()
 		else if (specified)
 		{
 			Declarator* declarator = parse_declarator(DeclaratorMode::Named);
-			if (declarator != nullptr && accept(TokenKind::OP_COLON))
+			if (declarator != nullptr && !c_source_ && accept(TokenKind::OP_COLON))
 			{
 				attempt.commit();
 				RangeForStmt* stmt = make<RangeForStmt>(StmtKind::RangeFor, start);

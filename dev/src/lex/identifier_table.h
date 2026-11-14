@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "lex/token_kind.h"
+#include "lex/source_language.h"
 #include "support/memory/arena.h"
 
 struct MacroDefinition;
@@ -49,16 +50,18 @@ struct alignas(8) Identifier
 class IdentifierTable
 {
 public:
-	explicit IdentifierTable(Arena& arena);
+	explicit IdentifierTable(Arena& arena, SourceLanguage language = SourceLanguage::Cxx);
 
 	Identifier* intern(const char* spelling, uint32_t length);
 
 	uint32_t size() const { return count_; }
+	SourceLanguage language() const { return language_; }
 
 private:
 	void grow();
 
 	Arena& arena_;
+	SourceLanguage language_;
 	std::vector<Identifier*> slots_;
 	uint32_t count_;
 };
