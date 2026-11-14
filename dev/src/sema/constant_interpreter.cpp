@@ -630,7 +630,7 @@ ConstantInterpreter::StorageView ConstantInterpreter::descend(
 				continue;
 			const Type* member_type = member->variable->type;
 			const int64_t start = static_cast<int64_t>(member->offset / 8);
-			const int64_t size = member_type->is_reference() ? 8 : static_cast<int64_t>(size_of(member_type, 0));
+			const int64_t size = static_cast<int64_t>(size_of(member_type, 0));
 			if (offset < start || offset >= start + (size != 0 ? size : 1))
 				continue;
 			ConstValue* slot = value == nullptr ? nullptr : &value->elements[index + member->ordinal];
@@ -687,7 +687,7 @@ int64_t ConstantInterpreter::member_extent(const DataMember* member)
 	// none, see OverlappingEmpty), a reference's address.
 	const Type* type = member->variable->type;
 	const ClassEntity* cls = member->overlapping ? ClassOf(type) : nullptr;
-	const uint64_t size = type->is_reference() ? 8 : cls != nullptr ? cls->nvsize : size_of(type, 0);
+	const uint64_t size = cls != nullptr ? cls->nvsize : size_of(type, 0);
 	return size != 0 ? static_cast<int64_t>(size) : 1;
 }
 
@@ -1086,8 +1086,6 @@ uint64_t ConstantInterpreter::size_of(const Type* type, uint32_t location)
 {
 	(void)location;
 	uint64_t size = 0, alignment = 0;
-	if (type->is_reference())
-		return 8;
 	if (type->kind == TypeKind::Function || IsVoid(type))
 		return 1;
 	analyzer_.object_layout(type, size, alignment);
