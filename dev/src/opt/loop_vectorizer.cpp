@@ -1878,7 +1878,7 @@ Value LoopVectorizer::group_address(const LaneCell& cell, int64_t group)
 	Instruction field = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
 	field.ops[0] = cell.base;
 	field.ops[1] = literal(group * static_cast<int64_t>(lanes_ * lane_bytes(cell.type)));
-	return emit(field, Type::scalar(TypeKind::Ptr));
+	return emit(field, body_.pointer_type());
 }
 
 // An induction's value `by` of its units on from `from`. (Each value is one
