@@ -177,7 +177,7 @@ public:
 		const std::vector<std::pair<uint32_t, uint32_t>>& split, std::vector<std::pair<uint32_t, uint32_t>>& homed);
 	Reg choose_register(uint32_t c, uint32_t first, uint32_t past, Reg web, Reg tied, Reg mate = kNoReg);
 	void emission_facts();
-	void hint_chain(lowir::Value v, uint32_t block, Reg reg);
+	void hint_chain(lowir::Value v, uint32_t block, Reg reg, bool firm = false);
 	bool computed_from(uint32_t g, uint32_t from) const;
 	bool forms_address(const lowir::Instruction& inst) const;
 

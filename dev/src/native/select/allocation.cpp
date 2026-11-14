@@ -844,19 +844,17 @@ Reg FunctionSelector::allocate(uint32_t temp, uint32_t exclude, Reg prefer0, Reg
 	}
 	// O1+: a hint naming one of the preferred (dying operand) registers
 	// costs nothing there, so it is taken first (a value flowing into a
-	// phi computed in the phi's register: register_allocation.cpp).
-	const bool hinted = level_ >= 1 && t.hint != kNoReg && t.hint == prefer1;
+	// phi computed in the phi's register: register_allocation.cpp), and so
+	// is a firm one (the phi of an edge the block usually leaves by).
+	const bool hinted = level_ >= 1 && t.hint != kNoReg && (t.hint == prefer1 || t.firm_hint);
 	// For a return, prefer rax: a copy into an add can fuse to a three-
 	// address lea, while an add in its dying operand followed by the
 	// return's copy cannot use that fusion.
 	const bool returned = level_ >= 1 && t.hint == RAX;
 	const Reg prefs[3] = { returned ? static_cast<Reg>(RAX)
-			: hinted                ? prefer1
+			: hinted                ? t.hint
 									: prefer0,
-		returned     ? prefer0
-			: hinted ? prefer0
-					 : prefer1,
-		returned ? prefer1 : t.hint };
+		returned || hinted ? prefer0 : prefer1, returned || (hinted && t.hint != prefer1) ? prefer1 : t.hint };
 	for (unsigned k = 0; k < 3; ++k)
 		if (prefs[k] != kNoReg && (allowed & (1u << prefs[k])))
 			return prefs[k];
