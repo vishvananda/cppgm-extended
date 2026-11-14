@@ -1,70 +1,14 @@
-import {WASI, File, OpenFile, ConsoleStdout, PreopenDirectory, Directory} from './shim/index.js';
-
-const encoder = new TextEncoder();
-const hex = bytes => Array.from(bytes, n => n.toString(16).padStart(2, '0')).join('');
-const hash = async bytes => hex(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)));
-async function fetchBytes(path) {
-  const response = await fetch(path, {cache: 'no-store'});
-  if (!response.ok) throw Error(`${path}: HTTP ${response.status}`);
-  return new Uint8Array(await response.arrayBuffer());
-}
-function equal(a, b, name) {
-  const end = Math.min(a.length, b.length);
-  let offset = 0;
-  while (offset < end && a[offset] === b[offset]) ++offset;
-  if (offset !== end || a.length !== b.length)
-    throw Error(`${name}: first byte difference at ${offset}, sizes ${a.length}/${b.length}`);
-}
-function insert(root, path, file) {
-  const parts = path.split('/');
-  let dir = root;
-  for (const part of parts.slice(0, -1)) {
-    if (!dir.contents.has(part)) dir.contents.set(part, new Directory([]));
-    dir = dir.contents.get(part);
-  }
-  dir.contents.set(parts.at(-1), file);
-}
-function lookup(root, path) {
-  let node = root;
-  for (const part of path.split('/')) node = node?.contents?.get(part);
-  return node;
-}
-function invoke(module, root, args) {
-  const log = [];
-  const wasi = new WASI(['cppgm++', ...args], [], [new OpenFile(new File([])),
-    ConsoleStdout.lineBuffered(s => log.push(s)), ConsoleStdout.lineBuffered(s => log.push(s)),
-    new PreopenDirectory('.', root.contents)]);
-  return WebAssembly.instantiate(module, {wasi_snapshot_preview1: wasi.wasiImport}).then(instance => {
-    const status = wasi.start(instance);
-    return {status, log, memoryBytes: instance.exports.memory.buffer.byteLength};
-  });
-}
+import {File, Directory, encoder, hash, fetchBytes, equal, insert, lookup, invoke, loadCompiler} from './wasi_runtime.mjs';
 
 self.onmessage = async ({data: options}) => {
   const started = performance.now();
   try {
-    const manifestBytes = await fetchBytes('manifest.json');
-    const expectedManifest = new TextDecoder().decode(await fetchBytes('manifest.sha256')).trim();
-    if (await hash(manifestBytes) !== expectedManifest) throw Error('manifest hash mismatch');
-    const manifest = JSON.parse(new TextDecoder().decode(manifestBytes));
-    if (manifest.schema !== 1) throw Error('unsupported input manifest');
-    for (const [path, expected] of Object.entries(manifest.shim_files))
-      if (await hash(await fetchBytes(path)) !== expected) throw Error(`shim changed: ${path}`);
-    for (const [path, expected] of Object.entries(manifest.runner_files))
-      if (await hash(await fetchBytes(path)) !== expected) throw Error(`runner changed: ${path}`);
-    const bundle = await fetchBytes('bundle.bin');
-    if (await hash(bundle) !== manifest.bundle_sha256) throw Error('input bundle hash mismatch');
-    const root = new Directory([]);
-    for (const item of manifest.files) {
-      const bytes = bundle.subarray(item.offset, item.offset + item.size);
-      if (await hash(bytes) !== item.sha256) throw Error(`input hash mismatch: ${item.path}`);
-      insert(root, item.path, new File(bytes, {readonly: true}));
-    }
-    const seedRecord = JSON.parse(new TextDecoder().decode(await fetchBytes('w1-complete.json')));
-    if (seedRecord.manifest !== expectedManifest) throw Error('seed used a different input manifest');
-    const seedBytes = await fetchBytes('inputs/w1/cppgm.wasm');
-    if (await hash(seedBytes) !== seedRecord.commands.at(-1).sha256) throw Error('seed hash mismatch');
-    let module = await WebAssembly.compile(seedBytes);
+    const {manifest, expectedManifest, root, seedBytes, module: seedModule} = await loadCompiler();
+    let module = seedModule;
+    postMessage({kind: 'ready', revision: manifest.revision, manifest: expectedManifest,
+                 dirty: manifest.dirty, sourceSha256: manifest.source_sha256,
+                 sources: manifest.sources, seedBytes: seedBytes.length,
+                 seedSha256: await hash(seedBytes)});
     const records = [];
     let peakMemoryBytes = 0;
     for (const stage of [2, 3]) {
@@ -91,6 +35,8 @@ self.onmessage = async ({data: options}) => {
         rows.push({output, bytes: actual.length, sha256: await hash(actual),
                    seconds: (performance.now() - before) / 1000, memoryBytes: result.memoryBytes,
                    diagnostics: result.log});
+        postMessage({kind: 'unit', stage, index: i, total: manifest.sources.length + 1,
+                     name: linking ? 'link compiler' : manifest.sources[i], ...rows.at(-1)});
       }
       records.push({stage, seconds: (performance.now() - stageStart) / 1000, commands: rows});
       module = await WebAssembly.compile(lookup(root, `w${stage}/cppgm.wasm`).data);
