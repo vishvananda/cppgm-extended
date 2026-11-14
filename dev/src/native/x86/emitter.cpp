@@ -158,8 +158,13 @@ const unsigned kLoopPad = 10;
 const uint32_t kNoChainEnd = 0xfffffffdu;
 
 // Compact repeated paths can be sensitive to fetch and decoded-op boundaries.
-// Move a short cycle to a 32-byte boundary only when it occupies fewer windows.
-// The same alignment on the object symbol preserves the choice after linking.
+// A cycle that one 32-byte window can hold moves to a window boundary only
+// when it would touch two. A longer cycle that one line can hold moves to the
+// next line only when it would lie on two: the processors that keep decoded
+// code by the line run it from one line, where a cycle on two lines takes a
+// second fetch each pass. A cycle that leaves on the data it reads is placed
+// as a counted one is. The same alignment on the object symbol preserves the
+// choice after linking.
 const unsigned kWindowBytes = 32;
 const int32_t kWindowLoop = 64;
 
@@ -167,6 +172,12 @@ const int32_t kWindowLoop = 64;
 unsigned windows_touched(uint64_t position, int32_t bytes)
 {
 	return static_cast<unsigned>((position % kWindowBytes + bytes + kWindowBytes - 1) / kWindowBytes);
+}
+
+// Whether `bytes` of code at `position` lie on two lines.
+bool crosses_line(uint64_t position, int32_t bytes)
+{
+	return position % kCodeLayoutBytes + bytes > kCodeLayoutBytes;
 }
 
 // Backward branches identify candidate heads in laid-out code. A later slow
@@ -212,7 +223,7 @@ void FunctionEmitter::find_loop_heads(const Function& function)
 		{
 			uint8_t& limit = loop_limit_[static_cast<size_t>(head - loop_heads_.begin())];
 			loop_counted_[static_cast<size_t>(head - loop_heads_.begin())] |= block.counted;
-			if (block.counted)
+			if (block.counted || (function.placement_valid && function.code_labels.empty()))
 				limit = kWindowLoop;
 		}
 	}
@@ -270,7 +281,9 @@ bool FunctionEmitter::measure_short_loops(const Function& function)
 		loop_bytes_[k] = span(loop_last_[k]);
 		if (loop_bytes_[k] == 0 && function.placement_valid)
 			loop_bytes_[k] = span(loop_near_[k]);
-		if (loop_bytes_[k] != 0 && !loop_counted_[k])
+		// A cycle longer than a window depends on the function's place in
+		// the line.
+		if (loop_bytes_[k] > static_cast<int32_t>(kWindowBytes))
 			code_window_ = kCodeLayoutBytes;
 		any = any || loop_bytes_[k] != 0;
 	}
@@ -281,15 +294,15 @@ bool FunctionEmitter::measure_short_loops(const Function& function)
 unsigned FunctionEmitter::loop_pad(size_t head, uint64_t at) const
 {
 	const int32_t bytes = loop_bytes_[head];
-	// End a compact data cycle at a line boundary, keeping its cold
-	// continuation out of that line. Back edges skip the entry padding.
-	if (bytes != 0 && !loop_counted_[head])
-		return static_cast<unsigned>((kCodeLayoutBytes - (at + bytes) % kCodeLayoutBytes) % kCodeLayoutBytes);
-	const unsigned to16 = (16 - at % 16) % 16;
-	const unsigned usual = to16 <= kLoopPad ? to16 : to16 - 8;
 	const unsigned to32 = (kWindowBytes - at % kWindowBytes) % kWindowBytes;
-	const bool fewer = bytes != 0 && windows_touched(at + to32, bytes) < windows_touched(at + usual, bytes);
-	return fewer ? to32 : usual;
+	// A cycle that one window can hold stays where one window holds it, and
+	// a longer one where one line does.
+	if (bytes != 0 && bytes <= static_cast<int32_t>(kWindowBytes))
+		return windows_touched(at, bytes) == 1 ? 0 : to32;
+	if (bytes != 0)
+		return crosses_line(at, bytes) ? static_cast<unsigned>(kCodeLayoutBytes - at % kCodeLayoutBytes) : 0;
+	const unsigned to16 = (16 - at % 16) % 16;
+	return to16 <= kLoopPad ? to16 : to16 - 8;
 }
 
 // The branches to encode short. Every branch that can be starts short; a
