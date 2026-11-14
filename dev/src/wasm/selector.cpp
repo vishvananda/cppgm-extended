@@ -88,18 +88,31 @@ void Selector::value(Value operand, Type type)
 		break;
 	}
 	case ValueKind::Integer:
-		constant(type.is_float() ? integer_as_float(type.kind(), body_.literals[operand.index])
-								 : body_.literals[operand.index],
-			type);
-		normalize(type);
+	{
+		Literal literal = type.is_float() ? integer_as_float(type.kind(), body_.literals[operand.index])
+										  : body_.literals[operand.index];
+		// A narrow literal is written in the view of its type.
+		const unsigned bits = integer_bits(type.kind());
+		if (bits != 0 && bits < 32)
+		{
+			const uint64_t mask = (uint64_t(1) << bits) - 1;
+			const bool negative = (bits == 8 || bits == 16) && !is_unsigned(type.kind()) &&
+				((literal.low >> (bits - 1)) & 1) != 0;
+			literal.low = negative ? literal.low | ~mask : literal.low & mask;
+		}
+		constant(literal, type);
 		break;
+	}
 	case ValueKind::Float:
 		constant(body_.literals[operand.index], type);
 		break;
 	case ValueKind::Slot:
-		address(operand);
-		out_.emit(memory_op(type, false), { 0, 0 });
+	{
+		const Place place = slot_place(operand.index);
+		place_base(place);
+		out_.emit(memory_op(type, false), { 0, place.offset });
 		break;
+	}
 	case ValueKind::Symbol:
 	{
 		const bool function = is_function_kind(program_.symbols[operand.index].kind);
@@ -134,9 +147,7 @@ void Selector::address(Value operand)
 		value(operand, program_.pointer_type());
 		return;
 	}
-	out_.emit(Op::LocalGet, { frame_ });
-	out_.emit(Op::I32Const, { slots_[operand.index] });
-	out_.emit(Op::I32Add);
+	place_address(slot_place(operand.index));
 }
 
 void Selector::normalize(Type type)
@@ -212,7 +223,7 @@ Op Selector::memory_op(Type type, bool store) const
 
 void Selector::restore_stack()
 {
-	if (saved_stack_ != kNoId)
+	if (saved_stack_ != kNoId && !keeps_stack_)
 	{
 		out_.emit(Op::LocalGet, { saved_stack_ });
 		out_.emit(Op::GlobalSet, { 0 });

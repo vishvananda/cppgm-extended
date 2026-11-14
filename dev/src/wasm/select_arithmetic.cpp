@@ -10,12 +10,24 @@ void Selector::binary(const lowir::Instruction& inst)
 	const ValueType type = value_type(inst.type);
 	const bool unsigned_view = operation == BinaryOp::UDiv || operation == BinaryOp::UMod ||
 		operation == BinaryOp::UShr;
-	value(inst.ops[0], inst.type);
-	if (!inst.type.is_float())
-		integer_view(inst.type, !unsigned_view);
-	value(inst.ops[1], inst.type);
-	if (!inst.type.is_float())
-		integer_view(inst.type, !unsigned_view);
+	// A quotient, a remainder and a right shift read the high bits of their
+	// operands. The low bits of the other results depend on the low bits of
+	// the operands only, and the result is normalized.
+	const bool reads_view = !inst.type.is_float() &&
+		(unsigned_view || operation == BinaryOp::Div || operation == BinaryOp::Mod || operation == BinaryOp::Shr);
+	if (reads_view)
+	{
+		viewed(inst.ops[0], inst.type, !unsigned_view);
+		viewed(inst.ops[1], inst.type, !unsigned_view);
+	}
+	else
+	{
+		value(inst.ops[0], inst.type);
+		if (operation == BinaryOp::Shl)
+			viewed(inst.ops[1], inst.type, true);
+		else
+			value(inst.ops[1], inst.type);
+	}
 	if (type == ValueType::F32 || type == ValueType::F64)
 	{
 		unsigned offset;
@@ -150,12 +162,22 @@ void Selector::compare(const lowir::Instruction& inst)
 	const bool floating = type == ValueType::F32 || type == ValueType::F64;
 	const bool unordered = predicate == ComparePredicate::Ult || predicate == ComparePredicate::Ule ||
 		predicate == ComparePredicate::Ugt || predicate == ComparePredicate::Uge;
-	value(inst.ops[0], inst.type);
-	if (!floating)
-		integer_view(inst.type, !unordered && inst.type.kind() != TypeKind::I1);
-	value(inst.ops[1], inst.type);
-	if (!floating)
-		integer_view(inst.type, !unordered && inst.type.kind() != TypeKind::I1);
+	if (floating)
+	{
+		value(inst.ops[0], inst.type);
+		value(inst.ops[1], inst.type);
+	}
+	else
+	{
+		bool signed_view = !unordered && inst.type.kind() != TypeKind::I1;
+		// Equality holds in either view: the operands keep the unsigned
+		// view when one of them has it.
+		if ((predicate == ComparePredicate::Eq || predicate == ComparePredicate::Ne) &&
+			(in_view(inst.ops[0], inst.type, false) || in_view(inst.ops[1], inst.type, false)))
+			signed_view = false;
+		viewed(inst.ops[0], inst.type, signed_view);
+		viewed(inst.ops[1], inst.type, signed_view);
+	}
 	unsigned offset;
 	switch (predicate)
 	{
@@ -224,12 +246,60 @@ void Selector::integer_view(Type type, bool signed_view)
 	}
 }
 
+// Whether `operand`, as value() leaves it, already is the signed or the
+// unsigned view of the narrow `type`. The local of a temporary holds the view
+// of that temporary's type when one of these operations made it: the selector
+// normalizes their results.
+bool Selector::in_view(Value operand, Type type, bool signed_view) const
+{
+	if (!operand.is(ValueKind::Temp) || wide_locals_[operand.index] != kNoId)
+		return false;
+	const auto& temp = body_.temps[operand.index];
+	const unsigned bits = integer_bits(temp.type.kind());
+	if (bits >= 32 || bits != integer_bits(type.kind()) || temp.def == kNoId)
+		return false;
+	switch (body_.instructions[temp.def].op)
+	{
+	case Opcode::Const:
+	case Opcode::Copy:
+	case Opcode::Load:
+	case Opcode::Unary:
+	case Opcode::Binary:
+	case Opcode::Convert:
+	case Opcode::Select:
+		return temp.type.kind() == TypeKind::I1 ? !signed_view : is_unsigned(temp.type.kind()) != signed_view;
+	default:
+		return false;
+	}
+}
+
+// `operand` in the signed or the unsigned view of `type`.
+void Selector::viewed(Value operand, Type type, bool signed_view)
+{
+	const unsigned bits = integer_bits(type.kind());
+	if (operand.is(ValueKind::Integer) && bits != 0 && bits < 32)
+	{
+		const uint64_t mask = (uint64_t(1) << bits) - 1;
+		uint64_t low = body_.literals[operand.index].low & mask;
+		if (signed_view && (low >> (bits - 1)) != 0)
+			low |= ~mask;
+		out_.emit(Op::I32Const, { static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(low))) });
+		return;
+	}
+	value(operand, type);
+	if (!in_view(operand, type, signed_view))
+		integer_view(type, signed_view);
+}
+
 void Selector::convert(const lowir::Instruction& inst)
 {
 	const auto operation = static_cast<ConvertOp>(inst.sub);
 	const Type from = convert_source_type(inst);
 	const ValueType source = value_type(from), destination = value_type(inst.type);
-	value(inst.ops[0], from);
+	if (operation == ConvertOp::SExt || operation == ConvertOp::ZExt)
+		viewed(inst.ops[0], from, operation == ConvertOp::SExt);
+	else
+		value(inst.ops[0], from);
 	if (source == destination && operation != ConvertOp::SExt && operation != ConvertOp::ZExt)
 		return;
 	switch (operation)
@@ -237,7 +307,6 @@ void Selector::convert(const lowir::Instruction& inst)
 	case ConvertOp::SExt:
 	case ConvertOp::ZExt:
 	{
-		integer_view(from, operation == ConvertOp::SExt);
 		if (destination == ValueType::I64 && source == ValueType::I32)
 			out_.emit(operation == ConvertOp::SExt ? Op::I64ExtendI32S : Op::I64ExtendI32U);
 		break;
@@ -249,7 +318,8 @@ void Selector::convert(const lowir::Instruction& inst)
 	case ConvertOp::SIToFP:
 	case ConvertOp::UIToFP:
 	{
-		integer_view(from, operation == ConvertOp::SIToFP);
+		if (!in_view(inst.ops[0], from, operation == ConvertOp::SIToFP))
+			integer_view(from, operation == ConvertOp::SIToFP);
 		const unsigned first = destination == ValueType::F32 ? 0xb2 : 0xb7;
 		const unsigned offset = (source == ValueType::I64 ? 2 : 0) + (operation == ConvertOp::UIToFP ? 1 : 0);
 		out_.emit(static_cast<Op>(first + offset));

@@ -181,7 +181,7 @@ reducer whose features the assignment owns. Host-linked, multi-unit,
 optimized or g++-output-compared programs belong to PA25 and later. Controls
 without a stated outcome stay with PA10–PA12's focused checkers.
 
-PA24, PA33 and PA34 also have `tests/regression/`, which pins this solution's
+PA24, PA33, PA34 and PA37 also have `tests/regression/`, which pins this solution's
 particular output shapes. Each one's `maintainer/Makefile` adds
 `test-regression` to `make test`. The export omits the regression fixtures, the
 `maintainer/` directory and the scripts only those lanes run, so student

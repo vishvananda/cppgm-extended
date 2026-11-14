@@ -1,0 +1,41 @@
+{
+  "source": true,
+  "wasi": true,
+  "exports": [
+    "copy_small",
+    "clear_small",
+    "copy_large",
+    "shift"
+  ],
+  "commands": [
+    {
+      "stdout": "",
+      "exit": 0
+    }
+  ],
+  "quality": {
+    "levels": [
+      1,
+      2,
+      3
+    ],
+    "functions": {
+      "copy_small": {
+        "memory_ops": 4,
+        "bulk_memory_ops": 0
+      },
+      "clear_small": {
+        "memory_ops": 2,
+        "bulk_memory_ops": 0
+      },
+      "copy_large": {
+        "memory_ops": 1
+      },
+      "shift": {
+        "memory_ops": 4,
+        "bulk_memory_ops": 0
+      }
+    }
+  },
+  "target": "wasm32-wasip1"
+}

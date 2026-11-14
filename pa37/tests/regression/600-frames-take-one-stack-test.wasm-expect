@@ -1,0 +1,45 @@
+{
+  "source": true,
+  "exports": [
+    "leaf",
+    "descend"
+  ],
+  "calls": [
+    {
+      "export": "leaf",
+      "args": [
+        "5"
+      ],
+      "result": "28"
+    },
+    {
+      "export": "descend",
+      "args": [
+        "3"
+      ],
+      "result": "4"
+    },
+    {
+      "export": "descend",
+      "args": [
+        "1000000"
+      ],
+      "trap": true
+    }
+  ],
+  "quality": {
+    "levels": [
+      1,
+      2,
+      3
+    ],
+    "functions": {
+      "leaf": {
+        "instructions": 57
+      },
+      "descend": {
+        "instructions": 70
+      }
+    }
+  }
+}

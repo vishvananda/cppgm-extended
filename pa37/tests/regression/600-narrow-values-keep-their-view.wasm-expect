@@ -1,0 +1,38 @@
+{
+  "source": true,
+  "wasi": true,
+  "exports": [
+    "is_branch",
+    "below",
+    "widened",
+    "bump"
+  ],
+  "commands": [
+    {
+      "stdout": "",
+      "exit": 0
+    }
+  ],
+  "quality": {
+    "levels": [
+      1,
+      2,
+      3
+    ],
+    "functions": {
+      "is_branch": {
+        "instructions": 9
+      },
+      "below": {
+        "instructions": 9
+      },
+      "widened": {
+        "instructions": 15
+      },
+      "bump": {
+        "instructions": 26
+      }
+    }
+  },
+  "target": "wasm32-wasip1"
+}

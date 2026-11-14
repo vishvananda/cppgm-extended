@@ -337,14 +337,15 @@ prune_student_pa34() {
   done
 }
 
-# PA24 and PA33 keep this solution's regression lanes in maintainer/Makefile,
-# as PA34 does: drop the lanes, the directory and the line that includes it,
-# and the scripts that only those lanes run.
+# PA24, PA33 and PA37 keep this solution's regression lanes in
+# maintainer/Makefile, as PA34 does: drop the lanes, the directory and the
+# line that includes it, and the scripts that only those lanes run.
 prune_student_regression_lanes() {
   local pa script scripts
   scripts=$(LC_ALL=C grep -h -o '\.\./scripts/[A-Za-z0-9_]*\.pl' \
-    "$dest/pa24/maintainer/Makefile" "$dest/pa33/maintainer/Makefile" | LC_ALL=C sort -u)
-  for pa in pa24 pa33; do
+    "$dest/pa24/maintainer/Makefile" "$dest/pa33/maintainer/Makefile" \
+    "$dest/pa37/maintainer/Makefile" | LC_ALL=C sort -u)
+  for pa in pa24 pa33 pa37; do
     rm -rf "$dest/$pa/maintainer" "$dest/$pa/tests/regression"
     perl -0pi -e 's/\n-include maintainer\/Makefile\n/\n/' "$dest/$pa/Makefile"
   done

@@ -1,0 +1,32 @@
+{
+  "source": true,
+  "wasi": true,
+  "exports": [
+    "locals_in_memory",
+    "counted"
+  ],
+  "commands": [
+    {
+      "stdout": "",
+      "exit": 0
+    }
+  ],
+  "quality": {
+    "levels": [
+      1,
+      2,
+      3
+    ],
+    "functions": {
+      "locals_in_memory": {
+        "memory_ops": 12,
+        "zero_offset_memory_ops": 4
+      },
+      "counted": {
+        "memory_ops": 5,
+        "zero_offset_memory_ops": 2
+      }
+    }
+  },
+  "target": "wasm32-wasip1"
+}

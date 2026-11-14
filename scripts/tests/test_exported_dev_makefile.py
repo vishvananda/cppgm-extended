@@ -177,13 +177,13 @@ class ExportedDevMakefileTests(unittest.TestCase):
                                         capture_output=True, text=True)
                 self.assertNotEqual(result.returncode, 0, target)
 
-    def test_pa24_pa33_export_drops_regression_lanes(self):
+    def test_export_drops_regression_lanes(self):
         script = EXPORT_SCRIPT.read_text()
         start = script.index('prune_student_regression_lanes() {')
         end = script.index('\n}\n', start) + len('\n}\n')
-        with tempfile.TemporaryDirectory(prefix='exported-pa24-pa33.') as temp:
+        with tempfile.TemporaryDirectory(prefix='exported-regression-lanes.') as temp:
             root = Path(temp)
-            for pa in ('pa24', 'pa33', 'pa34'):
+            for pa in ('pa24', 'pa33', 'pa34', 'pa37'):
                 shutil.copytree(REPO_ROOT / pa, root / pa, symlinks=True,
                                 ignore=shutil.ignore_patterns('*.my*', '*.check*', '*.ref.program'))
             shutil.copytree(REPO_ROOT / 'scripts', root / 'scripts', symlinks=True)
@@ -196,7 +196,9 @@ class ExportedDevMakefileTests(unittest.TestCase):
             # A script only the PA33 controls ran goes; one a course lane runs stays.
             self.assertFalse((root / 'scripts/check_lowir_inline_limit.pl').exists())
             self.assertTrue((root / 'scripts/check_pa24_native_contracts.pl').is_file())
-            for name in ('pa24', 'pa33'):
+            # (PA37 names its compiler build in TEST_DEPS; the others skip theirs by the flag.)
+            for name, skip_build in (('pa24', 'CPPGM_SKIP_DEV_REBUILD=1'), ('pa33', 'CPPGM_SKIP_DEV_REBUILD=1'),
+                                     ('pa37', 'TEST_DEPS=')):
                 with self.subTest(pa=name):
                     pa = root / name
                     self.assertFalse((pa / 'maintainer').exists())
@@ -206,13 +208,12 @@ class ExportedDevMakefileTests(unittest.TestCase):
                     for script_name in re.findall(r'\.\./scripts/[\w.-]+', makefile):
                         self.assertTrue((pa / script_name).is_file(), script_name)
                     result = subprocess.run(['make', '-n', '--no-print-directory', '-C', str(pa),
-                                             'test', 'ref-test', 'CPPGM_SKIP_DEV_REBUILD=1'],
+                                             'test', 'ref-test', skip_build],
                                             capture_output=True, text=True)
                     self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                    self.assertIn('scripts/run_all_tests.pl', result.stdout)
+                    self.assertRegex(result.stdout, r'scripts/run_all_tests(_common)?\.pl')
                     self.assertNotIn('regression', result.stdout)
-                    result = subprocess.run(['make', '-n', '-C', str(pa), 'test-regression',
-                                             'CPPGM_SKIP_DEV_REBUILD=1'],
+                    result = subprocess.run(['make', '-n', '-C', str(pa), 'test-regression', skip_build],
                                             capture_output=True, text=True)
                     self.assertNotEqual(result.returncode, 0, result.stdout)
 

@@ -3,6 +3,7 @@
 #include "opt/loops.h"
 #include "wasm/module.h"
 #include "wasm/control.h"
+#include "wasm/object_places.h"
 #include "machine/switch_plan.h"
 #include "machine/call_arguments.h"
 #include "machine/phi_inputs.h"
@@ -22,6 +23,24 @@ private:
 	void value(lowir::Value value, lowir::Type type);
 	void address(lowir::Value value);
 	uint32_t memory_address(lowir::Value value);
+	// An address that the selector can write again: a base, which is the
+	// local `local` or the address `base`, and a displacement that does not
+	// wrap at 32 bits.
+	struct Place
+	{
+		lowir::Value base;
+		uint32_t local;
+		uint32_t offset;
+	};
+	Place place_of(lowir::Value address) const;
+	Place frame_place(uint32_t offset) const;
+	Place slot_place(uint32_t slot) const;
+	uint32_t argument_slot(lowir::Value source) const;
+	void reserve_objects();
+	void place_base(const Place& place);
+	void place_address(const Place& place);
+	void copy_bytes(const Place& destination, const Place& source, uint64_t bytes);
+	void zero_bytes(const Place& destination, uint64_t bytes);
 	void constant(lowir::Literal bits, lowir::Type type);
 	void instruction(const lowir::Instruction& inst);
 	void call(const lowir::Instruction& inst);
@@ -79,16 +98,19 @@ private:
 	void vector_dot(const lowir::Instruction& inst);
 	uint32_t vector_immediate(const lowir::Instruction& inst) const;
 	void integer_view(lowir::Type type, bool signed_view);
+	bool in_view(lowir::Value operand, lowir::Type type, bool signed_view) const;
+	void viewed(lowir::Value operand, lowir::Type type, bool signed_view);
 	void condition(lowir::Value operand);
 	void edge(lowir::BlockId from, lowir::BlockId to);
 	void phi_copies(lowir::BlockId from, lowir::BlockId to);
 	void block(lowir::BlockId block);
 	void restore_stack();
 	bool select_switch(const lowir::Instruction& inst);
+	bool narrow_selector(const lowir::Instruction& inst, lowir::Value& operand, lowir::Type& type) const;
 	void switch_tree(const std::vector<machine::CaseCluster>& clusters, uint32_t first, uint32_t past,
-		uint32_t selector, lowir::BlockId fallback);
+		uint32_t selector, lowir::Type type, lowir::BlockId fallback);
 	void switch_table(const std::vector<std::pair<int64_t, uint32_t>>& cases, const std::vector<uint32_t>& targets,
-		uint32_t selector, lowir::BlockId fallback);
+		uint32_t selector, lowir::Type type, lowir::BlockId fallback);
 	void dispatch();
 	void simple();
 	bool structured();
@@ -118,6 +140,9 @@ private:
 	std::vector<uint32_t> exception_contexts_;
 	lowir::InstId current_inst_ = lowir::kNoId;
 	std::vector<uint32_t> slots_;
+	// Per slot: the local that holds the base of the slot's storage (kNoId: the frame).
+	std::vector<uint32_t> slot_locals_;
+	ObjectPlaces places_;
 	std::vector<uint32_t> locals_;
 	std::vector<uint32_t> wide_locals_;
 	std::vector<uint32_t> objects_;
@@ -133,6 +158,7 @@ private:
 	uint32_t hidden_result_ = lowir::kNoId;
 	uint32_t frame_ = lowir::kNoId;
 	uint32_t saved_stack_ = lowir::kNoId;
+	bool keeps_stack_ = false; // the stack pointer stays where the function found it
 	uint32_t pc_ = lowir::kNoId;
 	uint32_t nesting_ = 0;
 	uint32_t dispatch_depth_ = 0;

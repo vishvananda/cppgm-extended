@@ -41,16 +41,19 @@ void Selector::call_body(const lowir::Instruction& inst, const lowir::Signature&
 		if (argument.passing == Passing::Indirect)
 		{
 			const uint32_t offset = call_areas_[inst.extra_first + i];
-			frame_address(offset);
-			address(source);
-			out_.emit(Op::I32Const, { parameters[i].type.bytes });
-			out_.emit(Op::MemoryCopy, { 0, 0 });
+			if (offset == kNoId)
+			{
+				// The slot is this argument's object and nothing else reads it.
+				place_address(slot_place(argument_slot(source)));
+				continue;
+			}
+			copy_bytes(frame_place(offset), place_of(source), parameters[i].type.bytes);
 			frame_address(offset);
 		}
 		else if (argument.passing == Passing::Coerce)
 		{
-			address(source);
-			out_.emit(memory_op(argument.scalar, false), { 0, 0 });
+			const uint32_t offset = memory_address(source);
+			out_.emit(memory_op(argument.scalar, false), { 0, offset });
 		}
 		else if (argument.passing == Passing::Expand)
 		{
@@ -61,10 +64,11 @@ void Selector::call_body(const lowir::Instruction& inst, const lowir::Signature&
 			}
 			else
 			{
-				address(source);
-				out_.emit(Op::I64Load, { 0, 0 });
-				address(source);
-				out_.emit(Op::I64Load, { 0, 8 });
+				const Place place = place_of(source);
+				place_base(place);
+				out_.emit(Op::I64Load, { 0, place.offset });
+				place_base(place);
+				out_.emit(Op::I64Load, { 0, uint64_t(place.offset) + 8 });
 			}
 		}
 		else
@@ -108,9 +112,9 @@ void Selector::return_value(const lowir::Instruction& inst)
 {
 	if (boundary_.result.passing == Passing::Indirect)
 	{
-		out_.emit(Op::LocalGet, { hidden_result_ });
 		if (signature_.result.kind() == TypeKind::I128)
 		{
+			out_.emit(Op::LocalGet, { hidden_result_ });
 			wide_part(inst.ops[0], 0);
 			out_.emit(Op::I64Store, { 0, 0 });
 			out_.emit(Op::LocalGet, { hidden_result_ });
@@ -118,16 +122,13 @@ void Selector::return_value(const lowir::Instruction& inst)
 			out_.emit(Op::I64Store, { 0, 8 });
 		}
 		else
-		{
-			address(inst.ops[0]);
-			out_.emit(Op::I32Const, { storage_bytes(signature_.result) });
-			out_.emit(Op::MemoryCopy, { 0, 0 });
-		}
+			copy_bytes(
+				Place{ Value::none(), hidden_result_, 0 }, place_of(inst.ops[0]), storage_bytes(signature_.result));
 	}
 	else if (boundary_.result.passing == Passing::Coerce)
 	{
-		address(inst.ops[0]);
-		out_.emit(memory_op(boundary_.result.scalar, false), { 0, 0 });
+		const uint32_t offset = memory_address(inst.ops[0]);
+		out_.emit(memory_op(boundary_.result.scalar, false), { 0, offset });
 	}
 	else if (boundary_.result.passing == Passing::Direct && !inst.type.is_void())
 		value(inst.ops[0], inst.type);

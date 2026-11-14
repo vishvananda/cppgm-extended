@@ -1,0 +1,52 @@
+{
+  "source": true,
+  "wasi": true,
+  "exports": [
+    "total",
+    "swapped",
+    "spread",
+    "forward",
+    "chain",
+    "mutate"
+  ],
+  "commands": [
+    {
+      "stdout": "",
+      "exit": 0
+    }
+  ],
+  "quality": {
+    "levels": [
+      1,
+      2,
+      3
+    ],
+    "functions": {
+      "total": {
+        "instructions": 13,
+        "bulk_memory_ops": 0
+      },
+      "swapped": {
+        "instructions": 16,
+        "bulk_memory_ops": 0
+      },
+      "spread": {
+        "instructions": 15,
+        "bulk_memory_ops": 0
+      },
+      "forward": {
+        "instructions": 72,
+        "bulk_memory_ops": 0
+      },
+      "chain": {
+        "instructions": 52,
+        "bulk_memory_ops": 0
+      },
+      "mutate": {
+        "instructions": 46,
+        "bulk_memory_ops": 0
+      }
+    }
+  },
+  "target": "wasm32-wasip1"
+}

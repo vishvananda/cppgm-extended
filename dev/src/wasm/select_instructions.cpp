@@ -4,11 +4,16 @@ namespace wasm {
 
 using namespace lowir;
 
-uint32_t Selector::memory_address(Value operand)
+Selector::Place Selector::place_of(Value operand) const
 {
 	uint64_t offset = 0;
-	// A Wasm memarg adds without wrapping at 32 bits. Only the typed
-	// nonwrapping promise permits moving a displacement into that memarg.
+	// A Wasm memarg adds without wrapping at 32 bits. A displacement moves
+	// into the memarg when its steps have the typed nonwrapping promise, or
+	// when they stay in storage that is known: a plain step loses the promise
+	// where it runs on a path that the source did not take.
+	Value promised = operand;
+	uint64_t promised_offset = 0;
+	bool plain = false;
 	for (unsigned depth = 0; depth < 16 && operand.is(ValueKind::Temp); ++depth)
 	{
 		const InstId id = body_.temps[operand.index].def;
@@ -22,8 +27,12 @@ uint32_t Selector::memory_address(Value operand)
 			operand = def.ops[0];
 			continue;
 		}
-		if (def.op != Opcode::Index || def.index_bounds() != IndexBounds::InBounds ||
-			!def.ops[1].is(ValueKind::Integer))
+		if (def.op == Opcode::Addr && def.ops[0].is(ValueKind::Slot))
+		{
+			operand = def.ops[0];
+			break;
+		}
+		if (def.op != Opcode::Index || !def.ops[1].is(ValueKind::Integer))
 			break;
 		const auto& literal = body_.literals[def.ops[1].index];
 		const uint64_t scale = storage_bytes(def.type);
@@ -32,11 +41,96 @@ uint32_t Selector::memory_address(Value operand)
 		const uint64_t bytes = literal.low * scale;
 		if (bytes > UINT32_MAX - offset)
 			break;
+		if (def.index_bounds() != IndexBounds::InBounds && !plain)
+		{
+			plain = true;
+			promised = operand;
+			promised_offset = offset;
+		}
 		offset += bytes;
 		operand = def.ops[0];
 	}
-	address(operand);
-	return static_cast<uint32_t>(offset);
+	// A slot and the object of a value in memory are in the frame: the
+	// frame's address plus their offset does not wrap. A phi of such values
+	// holds the address of one of its inputs.
+	Place known{ Value::none(), kNoId, 0 };
+	uint64_t storage = 0;
+	if (operand.is(ValueKind::Slot))
+	{
+		known = slot_place(operand.index);
+		storage = storage_bytes(body_.slots[operand.index].type);
+	}
+	else if (operand.is(ValueKind::Temp) && memory_value(body_.temps[operand.index].type) &&
+		wide_locals_[operand.index] == kNoId)
+	{
+		const InstId id = body_.temps[operand.index].def;
+		if (places_.slot_of[operand.index] != kNoId)
+			known = slot_place(places_.slot_of[operand.index]);
+		else if (objects_[operand.index] != kNoId && (id == kNoId || body_.instructions[id].op != Opcode::Phi))
+			known = frame_place(objects_[operand.index]);
+		else if (id == kNoId)
+			// A parameter that passes through memory: its local is the address.
+			known = Place{ Value::none(), locals_[operand.index], 0 };
+		storage = storage_bytes(body_.temps[operand.index].type);
+	}
+	else if (operand.is(ValueKind::Temp) && operand.index < body_.parameter_count &&
+		body_.temps[operand.index].type.is_pointer())
+		// The bytes that are readable from a pointer parameter at entry.
+		storage = program_.parameters_of(signature_)[operand.index].object_bytes;
+	if (plain && offset > storage)
+	{
+		operand = promised;
+		offset = promised_offset;
+		known.local = kNoId;
+	}
+	if (known.local != kNoId && offset <= UINT32_MAX - known.offset)
+		return Place{ Value::none(), known.local, static_cast<uint32_t>(offset + known.offset) };
+	return Place{ operand, kNoId, static_cast<uint32_t>(offset) };
+}
+
+Selector::Place Selector::frame_place(uint32_t offset) const
+{
+	return Place{ Value::none(), frame_, offset };
+}
+
+Selector::Place Selector::slot_place(uint32_t slot) const
+{
+	return Place{ Value::none(), slot_locals_[slot] != kNoId ? slot_locals_[slot] : frame_, slots_[slot] };
+}
+
+// The slot that a by-value argument names when the callee takes the slot
+// itself; kNoId when the callee takes a copy.
+uint32_t Selector::argument_slot(Value source) const
+{
+	const auto address = opt::locate(body_, source);
+	if (!address.root.is(ValueKind::Slot) || !address.known || address.offset != 0)
+		return kNoId;
+	return places_.argument[address.root.index] ? address.root.index : kNoId;
+}
+
+void Selector::place_base(const Place& place)
+{
+	if (place.local != kNoId)
+		out_.emit(Op::LocalGet, { place.local });
+	else
+		address(place.base);
+}
+
+void Selector::place_address(const Place& place)
+{
+	place_base(place);
+	if (place.offset != 0)
+	{
+		out_.emit(Op::I32Const, { place.offset });
+		out_.emit(Op::I32Add);
+	}
+}
+
+uint32_t Selector::memory_address(Value operand)
+{
+	const Place place = place_of(operand);
+	place_base(place);
+	return place.offset;
 }
 
 void Selector::instruction(const lowir::Instruction& inst)
@@ -85,6 +179,13 @@ void Selector::instruction(const lowir::Instruction& inst)
 	{
 		const uint32_t offset = memory_address(inst.ops[0]);
 		out_.emit(memory_op(inst.type, false), { 0, offset });
+		// A load of 8 or 16 bits extends to the view of its type.
+		const unsigned bits = integer_bits(inst.type.kind());
+		if ((bits == 8 || bits == 16) && body_.temps[inst.result].type == inst.type)
+		{
+			out_.emit(Op::LocalSet, { locals_[inst.result] });
+			return;
+		}
 		break;
 	}
 	case Opcode::Store:
@@ -97,9 +198,25 @@ void Selector::instruction(const lowir::Instruction& inst)
 	case Opcode::Index:
 	{
 		address(inst.ops[0]);
+		const uint64_t bytes = storage_bytes(inst.type);
+		if (inst.ops[1].is(ValueKind::Integer))
+		{
+			// A literal step is one constant: the product wraps as the address does.
+			const auto step = static_cast<int32_t>(
+				static_cast<uint32_t>(body_.literals[inst.ops[1].index].low * bytes));
+			if (step != 0)
+			{
+				out_.emit(Op::I32Const, { static_cast<uint64_t>(static_cast<int64_t>(step)) });
+				out_.emit(Op::I32Add);
+			}
+			break;
+		}
 		value(inst.ops[1], Type::scalar(TypeKind::U32));
-		out_.emit(Op::I32Const, { storage_bytes(inst.type) });
-		out_.emit(Op::I32Mul);
+		if (bytes != 1)
+		{
+			out_.emit(Op::I32Const, { bytes });
+			out_.emit(Op::I32Mul);
+		}
 		out_.emit(Op::I32Add);
 		break;
 	}
@@ -168,16 +285,10 @@ void Selector::instruction(const lowir::Instruction& inst)
 		out_.emit(Op::Unreachable);
 		return;
 	case Opcode::CopyObject:
-		address(inst.ops[1]);
-		address(inst.ops[0]);
-		out_.emit(Op::I32Const, { static_cast<uint64_t>(inst.immediate) });
-		out_.emit(Op::MemoryCopy, { 0, 0 });
+		copy_bytes(place_of(inst.ops[1]), place_of(inst.ops[0]), static_cast<uint64_t>(inst.immediate));
 		return;
 	case Opcode::ZeroInit:
-		address(inst.ops[0]);
-		out_.emit(Op::I32Const, { 0 });
-		out_.emit(Op::I32Const, { static_cast<uint64_t>(inst.immediate) });
-		out_.emit(Op::MemoryFill, { 0 });
+		zero_bytes(place_of(inst.ops[0]), static_cast<uint64_t>(inst.immediate));
 		return;
 	case Opcode::StackSave:
 		out_.emit(Op::GlobalGet, { 0 });
