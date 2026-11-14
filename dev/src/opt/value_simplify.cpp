@@ -2807,6 +2807,12 @@ bool Simplifier::reuse_quotient(BlockId block, InstId& prev, InstId id)
 	if (seen.op != Opcode::Binary || seen.type.kind() == TypeKind::I128 || seen.result == kNoId ||
 		(static_cast<BinaryOp>(seen.sub) != BinaryOp::Mod && static_cast<BinaryOp>(seen.sub) != BinaryOp::UMod))
 		return false;
+	// (An unsigned remainder by a power of two is one `and`: it saves no divide.)
+	Constant divisor;
+	Literal bits;
+	if (static_cast<BinaryOp>(seen.sub) == BinaryOp::UMod && constant(seen.ops[1], seen.type, divisor) &&
+		integer_bits(seen.type, divisor, bits) && bits.high == 0 && bits.low != 0 && (bits.low & (bits.low - 1)) == 0)
+		return false;
 	const Instruction remainder = seen;
 	Instruction quotient = make_instruction(Opcode::Binary, remainder.type);
 	quotient.sub = static_cast<uint8_t>(
