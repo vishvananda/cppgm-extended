@@ -241,6 +241,40 @@ CI also installs the bundle in a fresh client and exercises every exported
 reference wrapper. Publication repeats this check against the uploaded release
 URL before pushing the student repository.
 
+## Reference and version exports
+
+The assignment export workflow builds Linux x86_64 reference tools and a
+separate WASI bundle containing all nine tools. The WASI job uses the pinned
+WASI SDK, compiles with cppgm at O3, runs the tools with Wasmtime, and compares
+the compiler's x86 and Wasm floating-point objects with the native compiler's
+output. It also runs the LowIR builder, optimizer, native backend and ABI tool.
+A failure prevents publication of the rolling reference bundles.
+
+`scripts/export_wasm_reference_binaries.py --help` lists the local build
+inputs. It requires a new build directory. The archive includes the command
+modules, verified source/header/SDK filesystem, input and binary provenance,
+and dependency notices. Run `unpack_wasi_inputs.py` from the archive before
+using a command module; its README gives the Wasmtime invocation. Statistics
+and the persistent POSIX test runner are disabled in the WASI host profile.
+This does not change the output target or the ordinary native wrappers.
+
+Version tags such as `v8`, `v8.1`, `v8.1.2` and `v8.1-rc1` trigger the separate
+Version release workflow. It validates the native student reference bundle and
+WASI tools, then publishes both with source, provenance and SHA256SUMS. It
+creates a draft only after both build jobs pass, uploads the complete asset
+set, then publishes it. An existing version release is never overwritten by a
+rerun; use a new version tag. This workflow does not push the student repository
+or modify the rolling `reference-binaries` release.
+
+Source tarballs are made only for version tags, using `git archive` at the
+tagged commit and deterministic gzip metadata. They include tracked licenses
+and notices and exclude untracked files and local build products. The tagged
+commit must be checked out. For a local export:
+
+```sh
+python3 scripts/export_release_source.py --tag v8 --output /tmp/cppgm-v8-release
+```
+
 ## Symbol names
 
 The course names C++ entities as clang names them: clang is the oracle for

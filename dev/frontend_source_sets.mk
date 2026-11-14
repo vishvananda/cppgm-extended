@@ -91,3 +91,9 @@ FRONTEND_LIBRARY_SOURCE_IDS_lowir_library := $(FRONTEND_PHASE_BASENAMES_lowir) $
 # Explicit embedding link options shared by the source and LowIR drivers.
 FRONTEND_OBJ_BASENAMES_cppgm++ += driver/wasm_link_options
 FRONTEND_OBJ_BASENAMES_lowir2native += driver/wasm_link_options
+
+# Wasm-hosted LowIR preserves the x86 extended-float format through these
+# portable scanners and converters, independent of the host long double.
+FRONTEND_OBJ_BASENAMES_lowir += lex/interchange_float preprocess/lexer/char_classes
+FRONTEND_OBJ_BASENAMES_lowiropt += lex/interchange_float preprocess/lexer/char_classes
+FRONTEND_OBJ_BASENAMES_lowir2native += lex/interchange_float preprocess/lexer/char_classes

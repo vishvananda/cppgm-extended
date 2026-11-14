@@ -9,7 +9,9 @@
 #include "support/tool_errors.h"
 #include "support/tool_help_text.h"
 
+#if CPPGM_TELEMETRY_ENABLED
 #include <sys/resource.h>
+#endif
 
 #include <chrono>
 #include <cstdio>

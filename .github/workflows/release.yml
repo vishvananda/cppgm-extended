@@ -1,0 +1,94 @@
+name: Version release
+
+on:
+  push:
+    tags: ['v[0-9]*']
+
+permissions:
+  contents: read
+
+# A tag has one release producer. Never cancel an in-progress publication.
+concurrency:
+  group: version-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  wasm:
+    uses: ./.github/workflows/export-wasm-references.yml
+    with:
+      revision: ${{ github.sha }}
+
+  native-and-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install export dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends binutils build-essential curl gdb git gzip perl rsync tar xz-utils
+          perl scripts/install_wasm_tools.pl --prefix "$RUNNER_TEMP/wasm-tools"
+          echo "$RUNNER_TEMP/wasm-tools/bin" >> "$GITHUB_PATH"
+      - name: Export the tagged source and qualified native references
+        env:
+          VERSION_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/upload"
+          python3 scripts/export_release_source.py --tag "$VERSION_TAG" --output "$RUNNER_TEMP/upload"
+          bundle="$RUNNER_TEMP/upload/cppgm-reference-binaries-linux-x86_64-${VERSION_TAG}.tar.gz"
+          CPPGM_REFERENCE_BUNDLE_OUT="$bundle" \
+            CPPGM_REFERENCE_BUNDLE_NAME="$(basename "$bundle")" \
+            CPPGM_REFERENCE_BUNDLE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${VERSION_TAG}/$(basename "$bundle")" \
+            scripts/export_student_repo.sh --force "$RUNNER_TEMP/student-export"
+          python3 scripts/check_exported_reference_binaries.py "$RUNNER_TEMP/student-export" --bundle "$bundle"
+          cp "$RUNNER_TEMP/student-export/reference-binaries/manifest.tsv" "$RUNNER_TEMP/upload/native-reference-manifest.tsv"
+          make test-harness
+      - uses: actions/upload-artifact@v6
+        with:
+          name: version-native-and-source
+          path: ${{ runner.temp }}/upload/
+          if-no-files-found: error
+
+  publish:
+    needs: [wasm, native-and-source]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: reference-binaries-wasi
+          path: release
+      - uses: actions/download-artifact@v7
+        with:
+          name: version-native-and-source
+          path: release
+      - name: Publish the version's complete release once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          cd release
+          # A rerun must not overwrite published assets for a version tag.
+          if gh release view "$VERSION_TAG" >/dev/null 2>&1; then
+            echo "::error::This version already has a release; create a new version tag."
+            exit 1
+          fi
+          sha256sum *.tar.gz *.json *.tsv > SHA256SUMS
+          cat > release-notes.md <<'EOF'
+          Native Linux x86_64 and WASI reference tools, with the matching source archive.
+
+          WASI includes all nine tools and a frozen header/SDK filesystem. It uses prebuilt SDK libraries. These modules run in a WASI host or with the browser adapter; they are not standalone web pages.
+
+          SHA256SUMS and provenance records identify the source and build inputs. Native binaries require the Linux runtime used by the build. Source archives contain the committed version, without local build output.
+          EOF
+          gh release create "$VERSION_TAG" --verify-tag --draft \
+            --title "cppgm ${VERSION_TAG}" --notes-file release-notes.md \
+            ./*.tar.gz ./*.json ./*.tsv ./SHA256SUMS
+          gh release edit "$VERSION_TAG" --draft=false

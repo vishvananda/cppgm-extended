@@ -71,20 +71,36 @@ def floating_cases():
     return "\n".join(lines) + "\n"
 
 
+def source_sets(tools):
+    """Use the compiler's owning source lists, including each tool's entry point."""
+    makefile = "include dev/frontend_source_sets.mk\nlist:\n"
+    for name in tools:
+        makefile += "\t@printf '%s\\n' '" + name + "' $(FRONTEND_OBJ_BASENAMES_" + name + ") END\n"
+    lines = subprocess.check_output(["make", "-s", "-f", "-", "list"],
+                                    input=makefile.encode(), cwd=REPO).decode().splitlines()
+    result = {}
+    while lines:
+        name = lines.pop(0)
+        end = lines.index("END")
+        result[name] = ["dev/src/" + source + ".cpp" for source in lines[:end]] + ["dev/" + name + ".cpp"]
+        lines = lines[end + 1:]
+    return result
+
+
 def prepare(args):
     package = args.directory.resolve()
     package.mkdir()  # Never replace an existing experiment or its observations.
     inputs = package / "inputs"
     inputs.mkdir()
     copy_tree(REPO / "dev/src", inputs / "dev/src")
-    shutil.copyfile(REPO / "dev/cppgm++.cpp", inputs / "dev/cppgm++.cpp")
+    tools = getattr(args, "reference_tools", ["cppgm++"])
+    for name in tools:
+        shutil.copyfile(REPO / ("dev/" + name + ".cpp"), inputs / ("dev/" + name + ".cpp"))
     for name in ['LICENSE', 'NOTICE']:
         shutil.copyfile(REPO / name, inputs / name)
     shutil.copyfile(HERE / "wasi_host.h", inputs / "wasi_host.h")
-    makefile = "include dev/frontend_source_sets.mk\nlist:\n\t@printf '%s\\n' $(FRONTEND_OBJ_BASENAMES_cppgm++)\n"
-    sources = subprocess.check_output(["make", "-s", "-f", "-", "list"],
-                                      input=makefile.encode(), cwd=REPO).decode().splitlines()
-    sources = ["dev/src/" + name + ".cpp" for name in sources] + ["dev/cppgm++.cpp"]
+    tool_sources = source_sets(tools)
+    sources = tool_sources["cppgm++"]
     config = (REPO / "obj/generated/cppgm_builtin_host_config.h").read_text()
     paths = re.search(r"kStandardIncludePaths\[\] = \{(.*?)\};", config, re.S)
     if paths is None:
@@ -154,6 +170,7 @@ def prepare(args):
                 "runner_files": {name: digest((package / name).read_bytes()) for name in runners},
                 "sdk_version": (args.sdk / "VERSION").read_text(),
                 "revision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO).decode().strip(),
+                "tool_sources": tool_sources,
                 "dirty": bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=REPO)),
                 "source_sha256": digest(json.dumps([(f['path'], f['sha256']) for f in files
                                                      if f['path'].startswith('dev/')]).encode())}
