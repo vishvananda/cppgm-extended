@@ -1895,7 +1895,8 @@ bool Analyzer::OwnParameter(const Type* argument, uint32_t depth, uint32_t index
 {
 	// Whether a canonical argument is the template parameter at (depth,
 	// index) itself (or, for a pack, the expansion of it): a substitution
-	// by such arguments changes nothing. A parameter pack given alone is
+	// by such arguments changes nothing. Added cv-qualifiers change the
+	// operand, so are not identity arguments. A parameter pack given alone is
 	// another template's pack at that position, named in an expansion's
 	// pattern for a parameter that is no pack (`A<P>...`).
 	const bool expansion = argument->kind == TypeKind::Pack && argument->param_count == 1 &&
@@ -1905,7 +1906,7 @@ bool Analyzer::OwnParameter(const Type* argument, uint32_t depth, uint32_t index
 	if (argument->kind != TypeKind::TemplateParameter && argument->kind != TypeKind::TemplateTemplateParameter)
 		return false;
 	const TemplateParameterEntity* parameter = static_cast<const TemplateParameterEntity*>(argument->entity);
-	return !IsPlaceholder(parameter) && parameter->depth == depth && parameter->index == index &&
+	return argument->cv == 0 && !IsPlaceholder(parameter) && parameter->depth == depth && parameter->index == index &&
 		parameter->pack == expansion;
 }
 

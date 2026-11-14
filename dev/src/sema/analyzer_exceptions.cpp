@@ -991,6 +991,7 @@ bool Analyzer::noexcept_value(const FunctionEntity* function, const syntax::Expr
 	// declaration, typed in `scope` and contextually converted to bool
 	// (15.4p1). Instantiated on need, it is no part of a substitution under
 	// way: an invalid expression in it is an error (14.8.2p7's note).
+	ScratchContext scratch(*this);
 	BodyContext* saved_body = body_;
 	FunctionEntity* saved_demanding = demanding_;
 	const uint32_t saved_epoch = current_epoch_;

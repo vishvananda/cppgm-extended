@@ -50,7 +50,8 @@ Analyzer::InstantiationContext::InstantiationContext(
 	  deferring_reserved_(analyzer.deferring_reserved_), template_arguments_(analyzer.template_arguments_),
 	  callee_name_(analyzer.callee_name_), soft_substitution_(analyzer.soft_substitution_), failure_(analyzer.failure_),
 	  substitution_(substitution), direct_class_(analyzer.direct_class_), standard_only_(analyzer.standard_only_),
-	  explicit_specialization_(analyzer.explicit_specialization_), lexical_limit_(analyzer.lexical_limit_)
+	  explicit_specialization_(analyzer.explicit_specialization_), lexical_limit_(analyzer.lexical_limit_),
+	  scratch_(analyzer)
 {
 	a_.instantiation_depth_ = depth;
 	a_.body_ = nullptr;
@@ -92,16 +93,10 @@ Analyzer::InstantiationContext::InstantiationContext(
 	// Its lookups see the definition context's namespace-scope names
 	// (14.6.4.2), or all (a definition point not recorded: none).
 	a_.names_.set_limit(limit != 0 ? limit : NameLookup::kNoLimit);
-	if (a_.scratch_pool_.size() <= a_.scratch_level_)
-		a_.scratch_pool_.push_back(new InstantiationScratch());
-	scratch_ = a_.scratch_pool_[a_.scratch_level_++];
-	swap_scratch();
 }
 
 Analyzer::InstantiationContext::~InstantiationContext()
 {
-	swap_scratch();
-	--a_.scratch_level_;
 	a_.instantiation_depth_ = instantiation_depth_;
 	a_.body_ = body_;
 	a_.class_depth_ = class_depth_;
@@ -148,7 +143,21 @@ Analyzer::InstantiationContext::~InstantiationContext()
 	a_.names_.set_value_parameter_uses(value_parameter_uses_);
 }
 
-void Analyzer::InstantiationContext::swap_scratch()
+Analyzer::ScratchContext::ScratchContext(Analyzer& analyzer) : a_(analyzer)
+{
+	if (a_.scratch_pool_.size() <= a_.scratch_level_)
+		a_.scratch_pool_.push_back(new InstantiationScratch());
+	scratch_ = a_.scratch_pool_[a_.scratch_level_++];
+	swap_scratch();
+}
+
+Analyzer::ScratchContext::~ScratchContext()
+{
+	swap_scratch();
+	--a_.scratch_level_;
+}
+
+void Analyzer::ScratchContext::swap_scratch()
 {
 	scratch_->candidates.swap(a_.candidates_);
 	scratch_->overload_set.swap(a_.overload_set_);

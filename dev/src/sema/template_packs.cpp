@@ -34,6 +34,10 @@ void AddPack(PackList& out, uint32_t index)
 // (14.5.3p5), including when an expression's result type is not dependent.
 const Type* DefinitionPack(const Binding* binding)
 {
+	// An instance can retain an expansion over its enclosing bound pack
+	// in a member template head. That binding still names the whole pack.
+	if (binding->type != nullptr && binding->type->kind == TypeKind::BoundPack)
+		return binding->type;
 	if (binding->kind == BindingKind::Parameter && binding->type != nullptr &&
 		binding->type->kind == TypeKind::Expansion)
 		return binding->type->element;
