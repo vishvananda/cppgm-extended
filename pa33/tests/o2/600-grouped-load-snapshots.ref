@@ -1,13 +1,9 @@
 function @swap(%a : ptr [alias=noalias], %b : ptr [alias=noalias]) -> void [no_inline=yes] {
   block ^entry:
-    %a1 = index i8 %a, 4
-    %b1 = index i8 %b, 4
-    %v2 = load i32 %a
-    %v3 = load i32 %a1
-    %t5 = load i64 %b
-    store i64 %t5, %a
-    store i32 %v2, %b
-    store i32 %v3, %b1
+    %t1 = load i64 %b
+    %t2 = load i64 %a
+    store i64 %t1, %a
+    store i64 %t2, %b
     return void
 }
 function @main() -> i32 [role=entry] {

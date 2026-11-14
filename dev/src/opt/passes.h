@@ -287,7 +287,7 @@ bool narrow_field_stores(FunctionContext& context);
 bool narrow_field_loads(FunctionContext& context);
 // O2+, after them: two adjacent 32-bit members stored one after the other
 // from the halves of one 64-bit value, or from loads of two adjacent
-// members that nothing has written since, are stored as one 64-bit value
+// members with no write between the loads, are stored as one 64-bit value
 // (read by one load). O(instructions), with a bounded walk per pair.
 bool join_field_moves(FunctionContext& context);
 

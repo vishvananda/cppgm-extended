@@ -34,6 +34,25 @@ function @rotate(%p : ptr, %q : ptr) -> void [binding=strong, no_inline=yes] {
     store i32 %b, %q4
     return void
 }
+function @exchange(%p : ptr, %q : ptr) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = load i64 %p
+    %t2 = load i64 %q
+    store i64 %t2, %p
+    store i64 %t1, %q
+    return void
+}
+function @written_between(%p : ptr, %q : ptr) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %a = load i32 %p
+    store i32 9, %p
+    %p4 = index i8 %p, 4
+    %b = load i32 %p4
+    store i32 %a, %q
+    %q4 = index i8 %q, 4
+    store i32 %b, %q4
+    return void
+}
 function @apart(%p : ptr, %q : ptr) -> void [binding=strong, no_inline=yes] {
   block ^entry:
     %a = load i32 %p
@@ -67,9 +86,24 @@ function @main() -> i64 [role=entry] {
     %c3b = index i8 %cells, 32
     %fifth = load i32 %c3b
     %fifth_bad = cmp ne i32 %fifth, 2
+    call void @exchange(%cells, %c3)
+    %sixth = load i64 %cells
+    %sixth_bad = cmp ne i64 %sixth, 1
+    %seventh = load i64 %c3
+    %seventh_bad = cmp ne i64 %seventh, 4294967297
+    %c5 = index i64 %cells, 5
+    call void @written_between(%c2, %c5)
+    %eighth = load i64 %c5
+    %eighth_bad = cmp ne i64 %eighth, 8589934593
+    %ninth = load i64 %c2
+    %ninth_bad = cmp ne i64 %ninth, 8589934601
     %bad0 = binary or i64 %moved_bad, %first_bad
     %bad1 = binary or i64 %third_bad, %fourth_bad
-    %bad2 = binary or i64 %bad0, %bad1
-    %bad = binary or i64 %fifth_bad, %bad2
+    %bad2 = binary or i64 %fifth_bad, %sixth_bad
+    %bad3 = binary or i64 %seventh_bad, %eighth_bad
+    %bad4 = binary or i64 %bad0, %bad1
+    %bad5 = binary or i64 %bad2, %bad3
+    %bad6 = binary or i64 %bad4, %bad5
+    %bad = binary or i64 %ninth_bad, %bad6
     return i64 %bad
 }

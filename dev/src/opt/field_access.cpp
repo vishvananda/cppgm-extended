@@ -428,8 +428,8 @@ const unsigned kMoveScan = 48;
 // O2+, late: a class of narrow members moves as their typed accesses (the
 // lowering's form: each may forward). Two 32-bit members written one after
 // the other from the halves of one 64-bit value, or from loads of two
-// adjacent members that nothing has written since, are one 64-bit store, of
-// that value or of one 64-bit load.
+// adjacent members with no write between the two loads, are one 64-bit
+// store, of that value or of one 64-bit load after the later load.
 class FieldMoves
 {
 public:
@@ -465,8 +465,11 @@ private:
 			high.offset == low.offset + 4;
 	}
 	bool halves(Value low, Value high, Value& whole) const;
-	bool unwritten(InstId load, BlockId block, InstId until);
+	bool reaches(InstId from, InstId to);
+	InstId wide_load(Value low, Value high);
 	bool join(BlockId block, InstId before, InstId first, InstId second);
+
+	const std::vector<BlockId>* block_of_ = nullptr; // read at the first pair of loads
 };
 
 FieldMoves::Place FieldMoves::place_of(Value address) const
@@ -517,28 +520,59 @@ bool FieldMoves::halves(Value low, Value high, Value& whole) const
 	return true;
 }
 
-// Whether nothing may write memory from `load` to `until`, a store of
-// `block`: the load stands in the block, or in the one block that enters it.
-bool FieldMoves::unwritten(InstId load, BlockId block, InstId until)
+// Whether the load `to` follows the load `from` with nothing between them
+// that may write memory: in one block, or `from` in the one block that
+// enters `to`'s.
+bool FieldMoves::reaches(InstId from, InstId to)
 {
+	const BlockId from_block = (*block_of_)[from], to_block = (*block_of_)[to];
+	bool entered = from_block == to_block;
 	unsigned steps = 0;
-	InstId last = load;
-	for (InstId i = body_.instructions[load].next; i != until; last = i, i = body_.instructions[i].next)
+	for (InstId last = from, i = body_.instructions[from].next;; last = i, i = body_.instructions[i].next)
 	{
 		if (i == kNoId)
 		{
 			const Cfg& cfg = c_.ensure_cfg_light();
-			if (cfg.pred_count(block) != 1 || body_.blocks[cfg.preds[cfg.pred_first[block]]].last != last)
+			if (entered || cfg.pred_count(to_block) != 1 || cfg.preds[cfg.pred_first[to_block]] != from_block ||
+				body_.blocks[from_block].last != last)
 				return false;
-			i = body_.blocks[block].first;
-			if (i == until)
-				return true;
+			entered = true;
+			i = body_.blocks[to_block].first;
 		}
+		if (i == to)
+			return entered;
 		if (++steps > kMoveScan || may_write_memory(c_.program, body_.instructions[i]) ||
 			body_.instructions[i].op == Opcode::Phi)
 			return false;
 	}
-	return true;
+}
+
+// One 64-bit load of the two adjacent members that `low` and `high` are
+// loads of, after the later of the two (kNoId: they are no such loads).
+InstId FieldMoves::wide_load(Value low, Value high)
+{
+	const Instruction* low_load = producer(low);
+	const Instruction* high_load = producer(high);
+	if (low_load == nullptr || high_load == nullptr || low_load->op != Opcode::Load || high_load->op != Opcode::Load ||
+		!narrow(*low_load) || !narrow(*high_load) || !beside(place_of(low_load->ops[0]), place_of(high_load->ops[0])))
+		return kNoId;
+	if (block_of_ == nullptr)
+		block_of_ = &c_.entry_block_of(join_field_moves);
+	const InstId low_id = body_.temps[low.index].def, high_id = body_.temps[high.index].def;
+	// (A load made here has no block in the map: its pair is joined already.)
+	if (low_id >= block_of_->size() || high_id >= block_of_->size())
+		return kNoId;
+	const InstId later = reaches(low_id, high_id) ? high_id : reaches(high_id, low_id) ? low_id : kNoId;
+	if (later == kNoId)
+		return kNoId;
+	Instruction load = make_instruction(Opcode::Load, Type::scalar(TypeKind::I64));
+	load.ops[0] = body_.instructions[low_id].ops[0];
+	load.location = body_.instructions[later].location;
+	const InstId at = append_instruction(body_, load);
+	const TempId t = append_temp(body_, load.type, at);
+	body_.instructions[at].result = t;
+	insert_after(body_, (*block_of_)[later], later, at);
+	return at;
 }
 
 // The stores `first` and `second` of one block, with nothing between them
@@ -555,24 +589,12 @@ bool FieldMoves::join(BlockId block, InstId before, InstId first, InstId second)
 	Value whole;
 	if (!halves(low.ops[0], high.ops[0], whole))
 	{
-		const Instruction* low_load = producer(low.ops[0]);
-		const Instruction* high_load = producer(high.ops[0]);
-		if (low_load == nullptr || high_load == nullptr || low_load->op != Opcode::Load ||
-			high_load->op != Opcode::Load || !narrow(*low_load) || !narrow(*high_load) ||
-			!beside(place_of(low_load->ops[0]), place_of(high_load->ops[0])) ||
-			!unwritten(body_.temps[low.ops[0].index].def, block, first) ||
-			!unwritten(body_.temps[high.ops[0].index].def, block, first))
+		const InstId at = wide_load(low.ops[0], high.ops[0]);
+		if (at == kNoId)
 			return false;
-		// One load of both members, before the first store.
-		Instruction load = make_instruction(Opcode::Load, Type::scalar(TypeKind::I64));
-		load.ops[0] = low_load->ops[0];
-		load.location = one.location;
-		const InstId at = append_instruction(body_, load);
-		const TempId t = append_temp(body_, load.type, at);
-		body_.instructions[at].result = t;
-		insert_after(body_, block, before, at);
-		before = at;
-		whole = Value::temp(t);
+		if (body_.instructions[at].next == first)
+			before = at;
+		whole = Value::temp(body_.instructions[at].result);
 	}
 	const Value address = low.ops[1];
 	Instruction& store = body_.instructions[second];
