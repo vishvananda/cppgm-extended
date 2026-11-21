@@ -1,5 +1,6 @@
 #include "opt/integer_patterns.h"
 #include "lowir/builder.h"
+#include "opt/loops.h"
 #include "opt/scalar_fold.h"
 namespace opt {
 using namespace lowir;
@@ -1033,6 +1034,64 @@ bool unsign_tested_division(FunctionContext& context, BlockId block, Instruction
 	inst.sub = static_cast<uint8_t>(op == BinaryOp::Div ? BinaryOp::UShr : BinaryOp::And);
 	inst.ops[1] = integer_value(body, Literal{ op == BinaryOp::Div ? shift : by.low - 1, 0 });
 	inst.flags = static_cast<decltype(inst.flags)>(inst.flags & ~(IF_EXACT | IF_NO_WRAP));
+	return true;
+}
+
+bool affine_difference(
+	const FunctionBody& body, IntegerPatternFacts& facts, Value x, Value y, Type type, uint64_t& difference)
+{
+	if (!type.is_integer() || type.kind() == TypeKind::I128)
+		return false;
+	Value root[2] = { x, y };
+	uint64_t scale[2] = { 1, 1 }, offset[2] = { 0, 0 };
+	for (unsigned side = 0; side < 2; ++side)
+		for (unsigned step = 0; step < 4; ++step)
+		{
+			const Value v = root[side];
+			const Instruction* def = v.is(ValueKind::Temp) && v.index >= body.parameter_count &&
+					body.temps[v.index].def != kNoId
+				? &body.instructions[body.temps[v.index].def]
+				: nullptr;
+			if (def == nullptr || def->op != Opcode::Binary || def->type != type || !def->ops[1].is(ValueKind::Integer))
+				break;
+			const uint64_t c = body.literals[def->ops[1].index].low;
+			const BinaryOp op = static_cast<BinaryOp>(def->sub);
+			if (op == BinaryOp::Add || op == BinaryOp::Sub)
+				offset[side] += (op == BinaryOp::Add ? c : 0 - c) * scale[side];
+			else if (op == BinaryOp::Mul)
+				scale[side] *= c;
+			else if (op == BinaryOp::Shl && c < 64)
+				scale[side] <<= c;
+			else
+				break;
+			root[side] = facts.resolve(def->ops[0]);
+		}
+	const unsigned width = 8 * storage_bytes(type);
+	const uint64_t mask = width >= 64 ? ~uint64_t(0) : (uint64_t(1) << width) - 1;
+	if (!(root[0] == root[1]) || ((scale[0] ^ scale[1]) & mask) != 0)
+		return false;
+	difference = (offset[0] - offset[1]) & mask;
+	return true;
+}
+
+bool index_difference(const FunctionBody& body, IntegerPatternFacts& facts, const Instruction& inst, int64_t& bytes)
+{
+	const Value x = facts.resolve(inst.ops[0]), y = facts.resolve(inst.ops[1]);
+	if (!x.is(ValueKind::Temp) || !y.is(ValueKind::Temp) || x.index < body.parameter_count ||
+		y.index < body.parameter_count || body.temps[x.index].def == kNoId || body.temps[y.index].def == kNoId)
+		return false;
+	const Instruction &a = body.instructions[body.temps[x.index].def], &b = body.instructions[body.temps[y.index].def];
+	if (a.op != Opcode::Index || b.op != Opcode::Index || storage_bytes(a.type) != storage_bytes(b.type) ||
+		!a.ops[1].is(ValueKind::Temp) || !b.ops[1].is(ValueKind::Temp))
+		return false;
+	const Type index_type = body.temps[a.ops[1].index].type;
+	const Located ra = locate(body, a.ops[0]), rb = locate(body, b.ops[0]);
+	uint64_t difference = 0;
+	if (integer_bits(index_type.kind()) != 64 || body.temps[b.ops[1].index].type != index_type || !ra.known ||
+		!rb.known || !(ra.root == rb.root) ||
+		!affine_difference(body, facts, facts.resolve(a.ops[1]), facts.resolve(b.ops[1]), index_type, difference))
+		return false;
+	bytes = ra.offset - rb.offset + static_cast<int64_t>(difference) * static_cast<int64_t>(storage_bytes(a.type));
 	return true;
 }
 

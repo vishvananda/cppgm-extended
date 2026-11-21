@@ -1,0 +1,72 @@
+function @step(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    return i64 8
+}
+function @scaled_step(%x : u32) -> i64 [no_inline=yes] {
+  block ^entry:
+    return i64 64
+}
+function @wrapping(%x : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    return i32 -2147483648
+}
+function @byte_elements(%p : ptr, %k : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    return i64 24
+}
+function @typed_elements(%p : ptr, %k : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    return i64 40
+}
+function @copy_length(%p : ptr, %k : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    return i64 3
+}
+function @different_scales(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %twice = binary mul i64 %x, 2
+    %a = binary add i64 %twice, 1
+    %d = binary sub i64 %a, %x
+    return i64 %d
+}
+function @narrow_step(%x : u32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %a = binary add u32 %x, 1
+    %wide_a = convert zext i64 u32 %a
+    %wide_x = convert zext i64 u32 %x
+    %d = binary sub i64 %wide_a, %wide_x
+    return i64 %d
+}
+function @main() -> i64 [role=entry] {
+  slot $array : obj<128x8>
+
+  block ^entry:
+    %p = addr $array
+    %s = call i64 @step(-5)
+    %c = call i64 @scaled_step(4294967295)
+    %w = call i32 @wrapping(7)
+    %y = call i64 @byte_elements(%p, 2)
+    %t = call i64 @typed_elements(%p, 1)
+    %n = call i64 @copy_length(%p, 4)
+    %g = call i64 @different_scales(10)
+    %m = call i64 @narrow_step(4294967295)
+    %m1 = call i64 @narrow_step(6)
+    %sb = cmp ne i64 %s, 8
+    %cb = cmp ne i64 %c, 64
+    %wb = cmp ne i32 %w, -2147483648
+    %yb = cmp ne i64 %y, 24
+    %tb = cmp ne i64 %t, 40
+    %nb = cmp ne i64 %n, 3
+    %gb = cmp ne i64 %g, 11
+    %mb = cmp ne i64 %m, -4294967295
+    %m1b = cmp ne i64 %m1, 1
+    %r1 = binary or i64 %sb, %cb
+    %r2 = binary or i64 %wb, %r1
+    %r3 = binary or i64 %yb, %r2
+    %r4 = binary or i64 %tb, %r3
+    %r5 = binary or i64 %nb, %r4
+    %r6 = binary or i64 %gb, %r5
+    %r7 = binary or i64 %mb, %r6
+    %bad = binary or i64 %m1b, %r7
+    return i64 %bad
+}
