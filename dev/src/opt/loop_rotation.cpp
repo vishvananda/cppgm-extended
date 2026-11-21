@@ -490,6 +490,27 @@ bool merge_loop_entries(FunctionContext& context)
 	return any;
 }
 
+// Loops nested at the header of the loop around them get headers of their
+// own (separate_nested_loop), so that each is a loop the passes can read.
+bool separate_loop_nests(FunctionContext& context)
+{
+	bool any = false;
+	for (unsigned round = 0; round < kRotateRounds; ++round)
+	{
+		context.ensure_cfg();
+		LoopForest forest;
+		find_loops(context.body, context.cfg, forest);
+		bool one = false;
+		for (uint32_t loop = 0; loop < forest.loops.size() && !one; ++loop)
+			one = separate_nested_loop(context.body, context.cfg, forest, loop);
+		if (!one)
+			break;
+		context.invalidate_cfg();
+		any = true;
+	}
+	return any;
+}
+
 // Small branchy loops often have a back edge on both the ordinary and boundary
 // paths. Join those edges so induction analysis and rotation see one latch.
 bool merge_loop_latches(FunctionContext& context)

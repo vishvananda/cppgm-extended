@@ -29,6 +29,15 @@ bool simplify_integer_compare(lowir::FunctionBody& body, const std::vector<uint3
 // field's place.
 bool simplify_field_step(lowir::FunctionBody& body, const std::vector<uint32_t>& uses, IntegerPatternFacts& facts,
 	lowir::Instruction& instruction);
+// Whether x and y are one value scaled alike plus literals: steps and
+// scalings by literals in `type` (of 64 bits or fewer) lead both to it.
+// `difference` is then x - y, wrapping as the type does.
+bool affine_difference(const lowir::FunctionBody& body, IntegerPatternFacts& facts, lowir::Value x, lowir::Value y,
+	lowir::Type type, uint64_t& difference);
+// The byte distance of a pointer difference `inst` of two element addresses
+// of one root whose 64-bit indexes have an affine_difference.
+bool index_difference(
+	const lowir::FunctionBody& body, IntegerPatternFacts& facts, const lowir::Instruction& inst, int64_t& bytes);
 bool simplify_pointer_distance(lowir::FunctionBody& body, IntegerPatternFacts& facts, lowir::BlockId block,
 	lowir::InstId& previous, lowir::InstId instruction);
 bool simplify_floor_correction(

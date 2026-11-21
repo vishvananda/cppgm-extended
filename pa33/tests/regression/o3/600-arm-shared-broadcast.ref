@@ -1,0 +1,100 @@
+target aarch64 1
+
+function @one_product(%a : ptr, %b : ptr, %n : i64) -> i32 {
+  block ^entry:
+    %k = vector fromi32 269850533
+    jump ^loop
+
+  block ^loop:
+    %acc = phi v128 [^entry: 0, ^loop: %acc2]
+    %i = phi i64 [^entry: 0, ^loop: %i1]
+    %q = index inbounds i32 %b, %i
+    %u = load v128 %q
+    %h = vector psrldi %u, 3
+    %l = vector pslldi %u, 5
+    %x = vector pxor %h, %l
+    %y = vector paddd %x, %u
+    %z = vector psrldi %y, 7
+    %t = vector pxor %y, %z
+    %s = vector pslldi %t, 11
+    %w = vector pxor %t, %s
+    %k4 = vector pshufd %k, 0
+    %m = vector pmulld %w, %k4
+    %acc1 = vector paddd %acc, %m
+    %acc2 = vector pxor %acc1, %u
+    %i1 = binary add nowrap i64 %i, 4
+    %more = cmp ult i64 %i1, %n
+    branch %more, ^loop, ^done
+
+  block ^done:
+    %r = vector toi32 %acc2
+    return i32 %r
+}
+function @two_products(%a : ptr, %b : ptr, %n : i64) -> i32 {
+  block ^entry:
+    %k = vector fromi32 269850533
+    %k4 = vector pshufd %k, 0
+    %t3 = binary and i64 %n, -8
+    branch %t3, ^unrolled_1, ^wide_tail_3
+
+  block ^unrolled_1:
+    %t4 = phi v128 [^unrolled_1: %t27, ^entry: 0]
+    %t5 = phi i64 [^unrolled_1: %t28, ^entry: 0]
+    %t6 = index inbounds i32 %a, %t5
+    %t7 = load v128 %t6
+    %t8 = vector pmulld %t7, %k4
+    %t9 = vector psrldi %t7, 3
+    %t10 = vector pslldi %t7, 5
+    %t11 = vector pxor %t9, %t10
+    %t12 = vector psrldi %t11, 7
+    %t13 = vector pxor %t11, %t12
+    %t14 = vector pmulld %t13, %k4
+    %t15 = vector paddd %t4, %t8
+    %t16 = vector paddd %t15, %t14
+    %t17 = index inbounds i32 %t6, 4
+    %t18 = load v128 %t17
+    %t19 = vector pmulld %t18, %k4
+    %t20 = vector psrldi %t18, 3
+    %t21 = vector pslldi %t18, 5
+    %t22 = vector pxor %t20, %t21
+    %t23 = vector psrldi %t22, 7
+    %t24 = vector pxor %t22, %t23
+    %t25 = vector pmulld %t24, %k4
+    %t26 = vector paddd %t16, %t19
+    %t27 = vector paddd %t26, %t25
+    %t28 = binary add nowrap i64 %t5, 8
+    %t29 = cmp ne i64 %t3, %t28
+    branch %t29, ^unrolled_1, ^loop_exit_2
+
+  block ^loop_exit_2:
+    %t30 = cmp ult i64 %t28, %n
+    branch %t30, ^wide_tail_3, ^done
+
+  block ^wide_tail_3:
+    %t31 = phi v128 [^entry: 0, ^loop_exit_2: %t27]
+    %t32 = phi i64 [^entry: 0, ^loop_exit_2: %t28]
+    jump ^loop
+
+  block ^loop:
+    %acc = phi v128 [^wide_tail_3: %t31, ^loop: %acc2]
+    %i = phi i64 [^wide_tail_3: %t32, ^loop: %i1]
+    %p = index inbounds i32 %a, %i
+    %v = load v128 %p
+    %m = vector pmulld %v, %k4
+    %h = vector psrldi %v, 3
+    %l = vector pslldi %v, 5
+    %x = vector pxor %h, %l
+    %z = vector psrldi %x, 7
+    %u = vector pxor %x, %z
+    %m2 = vector pmulld %u, %k4
+    %acc1 = vector paddd %acc, %m
+    %acc2 = vector paddd %acc1, %m2
+    %i1 = binary add nowrap i64 %i, 4
+    %more = cmp ult i64 %i1, %n
+    branch %more, ^loop, ^done
+
+  block ^done:
+    %t48 = phi v128 [^loop: %acc2, ^loop_exit_2: %t27]
+    %w = vector toi32 %t48
+    return i32 %w
+}

@@ -990,11 +990,13 @@ bool Simplifier::binary_identity(Instruction& inst, Value& out)
 	{
 		if (static_cast<BinaryOp>(inst.sub) != BinaryOp::Sub)
 			return false;
+		// (Or two element addresses whose indexes differ by a literal.)
 		const Located a = locate(body_, inst.ops[0]), b = locate(body_, inst.ops[1]);
-		if (!a.known || !b.known || !(a.root == b.root) ||
-			!(a.root.is(ValueKind::Temp) || a.root.is(ValueKind::Slot) || a.root.is(ValueKind::Symbol)))
+		int64_t bytes = a.offset - b.offset;
+		if ((!a.known || !b.known || !(a.root == b.root) ||
+				!(a.root.is(ValueKind::Temp) || a.root.is(ValueKind::Slot) || a.root.is(ValueKind::Symbol))) &&
+			!index_difference(body_, *this, inst, bytes))
 			return false;
-		const int64_t bytes = a.offset - b.offset;
 		out = integer_value(body_, Literal{ static_cast<uint64_t>(bytes), bytes < 0 ? ~0ull : 0 });
 		return true;
 	}
@@ -1104,6 +1106,13 @@ bool Simplifier::binary_identity(Instruction& inst, Value& out)
 			out = literal(integer_constant(type, zero));
 			return true;
 		}
+	}
+	// (x + 8) - x is 8, as is 8 * (x + 1) - 8 * x.
+	uint64_t difference = 0;
+	if (op == BinaryOp::Sub && affine_difference(body_, *this, x, y, type, difference))
+	{
+		out = literal(integer_constant(type, Literal{ difference, 0 }));
+		return true;
 	}
 	return false;
 }

@@ -48,9 +48,11 @@ void find_placement_loops(const PlacementGraph& graph, PlacementLoops& loops)
 		for (uint32_t k = succ_first[b]; k < succ_first[b + 1]; ++k)
 			preds[fill[succs[k]]++] = b;
 	// One loop per header, over all its back edges; members are the
-	// reachable blocks that reach a latch without passing the header.
+	// reachable blocks that reach a latch without passing the header. (Each
+	// loop's walks run together: a mark of another loop's walk between two
+	// of them would let a block in twice.)
 	std::vector<uint32_t> loop_of(n, kNoBlock), mark(n, kNoBlock), work, headers;
-	std::vector<std::vector<uint32_t>> found;
+	std::vector<std::vector<uint32_t>> found, latches;
 	for (uint32_t b = 0; b < n; ++b)
 		for (uint32_t k = succ_first[b]; k < succ_first[b + 1]; ++k)
 		{
@@ -61,10 +63,16 @@ void find_placement_loops(const PlacementGraph& graph, PlacementLoops& loops)
 			{
 				loop_of[h] = static_cast<uint32_t>(found.size());
 				found.push_back(std::vector<uint32_t>(1, h));
+				latches.push_back(std::vector<uint32_t>());
 				headers.push_back(h);
 			}
-			const uint32_t l = loop_of[h];
-			mark[h] = l;
+			latches[loop_of[h]].push_back(b);
+		}
+	for (uint32_t l = 0; l < found.size(); ++l)
+	{
+		mark[headers[l]] = l;
+		for (uint32_t b : latches[l])
+		{
 			if (mark[b] != l)
 			{
 				mark[b] = l;
@@ -87,6 +95,7 @@ void find_placement_loops(const PlacementGraph& graph, PlacementLoops& loops)
 				}
 			}
 		}
+	}
 	// Keep the loops whose walk stayed clear of the entry; give each block
 	// its smallest one and each loop the smallest one holding its header.
 	std::vector<uint32_t> kept;

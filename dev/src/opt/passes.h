@@ -276,6 +276,8 @@ bool rotate_loops(FunctionContext& context);
 // O3: a loop entered from several blocks is entered from one, which merges what
 // they bring (a phi of the loop may then fold before rotation reads it).
 bool merge_loop_entries(FunctionContext& context);
+// O3: a loop nested at its outer loop's header gets a header of its own.
+bool separate_loop_nests(FunctionContext& context);
 // O3: join the back edges of small branchy loops before induction/rotation.
 bool merge_loop_latches(FunctionContext& context);
 

@@ -491,6 +491,204 @@ bool make_loop_latch(FunctionBody& body, const Cfg& cfg, const LoopForest& fores
 	return true;
 }
 
+// Latches of one header separate_nested_loop sorts (each costs a walk of
+// the loop).
+const size_t kNestLatches = 8;
+
+namespace {
+
+// Whether `v` is temp `t` plus or minus a literal (an element index too).
+bool counter_step(const FunctionBody& body, TempId t, Value v)
+{
+	if (!v.is(ValueKind::Temp) || body.temps[v.index].def == kNoId)
+		return false;
+	const Instruction& def = body.instructions[body.temps[v.index].def];
+	const BinaryOp op = static_cast<BinaryOp>(def.sub);
+	return (def.op == Opcode::Index || (def.op == Opcode::Binary && (op == BinaryOp::Add || op == BinaryOp::Sub))) &&
+		def.ops[0] == Value::temp(t) && def.ops[1].is(ValueKind::Integer);
+}
+
+// Whether `latch` repeats by a counter's test: its branch compares the
+// value a header phi takes along it, a step of that phi by a literal (or the
+// phi), with a value the inner loop does not compute (`computed`).
+bool counted_latch(const FunctionBody& body, BlockId header, BlockId latch, const std::vector<uint8_t>& computed)
+{
+	const Instruction& branch = body.instructions[body.blocks[latch].last];
+	if (branch.op != Opcode::Branch || !branch.ops[0].is(ValueKind::Temp) ||
+		body.temps[branch.ops[0].index].def == kNoId)
+		return false;
+	const Instruction& test = body.instructions[body.temps[branch.ops[0].index].def];
+	if (test.op != Opcode::Compare)
+		return false;
+	for (InstId i = body.blocks[header].first; i != kNoId && body.instructions[i].op == Opcode::Phi;
+		i = body.instructions[i].next)
+	{
+		const Instruction& phi = body.instructions[i];
+		Value along = Value::none();
+		for (uint32_t k = 0; k < phi.extra_count; k += 2)
+			if (body.operands[phi.extra_first + k].index == latch)
+				along = body.operands[phi.extra_first + k + 1];
+		if (!counter_step(body, phi.result, along))
+			continue;
+		for (unsigned side = 0; side < 2; ++side)
+		{
+			const Value counter = test.ops[side], bound = test.ops[1 - side];
+			if ((counter == along || counter == Value::temp(phi.result)) &&
+				(!bound.is(ValueKind::Temp) || !computed[bound.index]))
+				return true;
+		}
+	}
+	return false;
+}
+
+} // namespace
+
+bool separate_nested_loop(FunctionBody& body, const Cfg& cfg, const LoopForest& forest, uint32_t loop)
+{
+	const Loop& l = forest.loops[loop];
+	const BlockId header = l.header;
+	if (l.latches.size() < 2 || l.latches.size() > kNestLatches || header == body.layout[0] ||
+		(cfg.flags[header] & BF_HANDLER) != 0)
+		return false;
+	// A latch is the inner loop's when the blocks that reach it from the
+	// header (its cycle) hold no other latch.
+	std::vector<uint8_t> inner(body.blocks.size(), 0), seen(body.blocks.size(), 0), inner_block(body.blocks.size(), 0);
+	std::vector<BlockId> cycle;
+	unsigned inside = 0;
+	// (Every cycle holds the header, itself a latch when it loops to itself.)
+	const bool self = std::find(l.latches.begin(), l.latches.end(), header) != l.latches.end();
+	for (BlockId latch : l.latches)
+	{
+		cycle.assign(1, latch);
+		seen[latch] = 1;
+		bool alone = latch == header || !self;
+		for (size_t n = 0; n < cycle.size() && alone && latch != header; ++n)
+			for (uint32_t k = cfg.pred_first[cycle[n]]; k < cfg.pred_first[cycle[n] + 1] && alone; ++k)
+			{
+				const BlockId y = cfg.preds[k];
+				if (y == header || seen[y] || !in_loop(forest, loop, y))
+					continue;
+				seen[y] = 1;
+				alone = std::find(l.latches.begin(), l.latches.end(), y) == l.latches.end();
+				cycle.push_back(y);
+			}
+		for (BlockId b : cycle)
+		{
+			seen[b] = 0;
+			inner_block[b] = inner_block[b] || alone;
+		}
+		inner[latch] = alone;
+		inside += alone;
+	}
+	if (inside == 0 || inside == l.latches.size())
+		return false;
+	for (uint32_t k = cfg.pred_first[header]; k < cfg.pred_first[header + 1]; ++k)
+		if ((cfg.flags[cfg.preds[k]] & BF_HANDLER) != 0)
+			return false;
+	// The outer loop steps a value the inner one keeps: some phi that every
+	// inner latch brings back unchanged takes another value along an outer
+	// latch. (Where no value is kept, the paths are one loop's.)
+	bool kept = false;
+	for (InstId i = body.blocks[header].first; i != kNoId && body.instructions[i].op == Opcode::Phi && !kept;
+		i = body.instructions[i].next)
+	{
+		const Instruction& phi = body.instructions[i];
+		const Value self_value = Value::temp(phi.result);
+		bool unchanged = true, stepped = false;
+		for (uint32_t k = 0; k < phi.extra_count; k += 2)
+		{
+			const BlockId pred = body.operands[phi.extra_first + k].index;
+			const bool same = body.operands[phi.extra_first + k + 1] == self_value;
+			if (inner[pred])
+				unchanged = unchanged && same;
+			else if (std::find(l.latches.begin(), l.latches.end(), pred) != l.latches.end())
+				stepped = stepped || !same;
+		}
+		kept = unchanged && stepped;
+	}
+	if (!kept)
+		return false;
+	// The inner loop is counted: each inner latch tests a counter against a
+	// value the inner loop keeps (from outside its blocks, or a header phi
+	// that its latches bring back unchanged). It leaves only into the outer
+	// loop's body: one that leaves the nest walks one range in segments (a
+	// search, or a deque's blocks) and is one loop.
+	std::vector<uint8_t> computed(body.temps.size(), 0);
+	inner_block[header] = 1;
+	for (BlockId b = 0; b < body.blocks.size(); ++b)
+	{
+		bool inside_outer = true;
+		if (inner_block[b])
+			for (uint32_t k = cfg.succ_first[b]; k < cfg.succ_first[b + 1]; ++k)
+				inside_outer = inside_outer && in_loop(forest, loop, cfg.succs[k]);
+		if (!inside_outer)
+			return false;
+		for (InstId i = inner_block[b] ? body.blocks[b].first : kNoId; i != kNoId; i = body.instructions[i].next)
+		{
+			const Instruction& inst = body.instructions[i];
+			bool keeps = b == header && inst.op == Opcode::Phi;
+			for (uint32_t k = 0; keeps && k < inst.extra_count; k += 2)
+				keeps = !inner[body.operands[inst.extra_first + k].index] ||
+					body.operands[inst.extra_first + k + 1] == Value::temp(inst.result);
+			if (inst.result != kNoId && !keeps)
+				computed[inst.result] = 1;
+		}
+	}
+	for (BlockId latch : l.latches)
+		if (inner[latch] && !counted_latch(body, header, latch, computed))
+			return false;
+	const BlockId outer = append_block(body, BlockKind::Split);
+	Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
+	jump.ops[0] = Value::block(header);
+	insert_after(body, outer, kNoId, append_instruction(body, jump));
+	body.layout.insert(std::find(body.layout.begin(), body.layout.end(), header), outer);
+	for (uint32_t k = cfg.pred_first[header]; k < cfg.pred_first[header + 1]; ++k)
+		if (!inner[cfg.preds[k]])
+			for_each_successor(body, body.instructions[body.blocks[cfg.preds[k]].last], [&](BlockId& t) {
+				if (t == header)
+					t = outer;
+			});
+	// Each phi's values from outside the inner loop meet in the outer header.
+	InstId tail = kNoId;
+	for (InstId i = body.blocks[header].first; i != kNoId && body.instructions[i].op == Opcode::Phi;
+		i = body.instructions[i].next)
+	{
+		const Instruction phi = body.instructions[i];
+		std::vector<Value> from_outer, from_inner;
+		Value common = Value::none();
+		bool same = true;
+		for (uint32_t k = 0; k < phi.extra_count; k += 2)
+		{
+			const Value pred = body.operands[phi.extra_first + k], value = body.operands[phi.extra_first + k + 1];
+			std::vector<Value>& pairs = inner[pred.index] ? from_inner : from_outer;
+			pairs.push_back(pred);
+			pairs.push_back(value);
+			if (inner[pred.index])
+				continue;
+			same = same && (common.is(ValueKind::None) || common == value);
+			common = value;
+		}
+		if (!same)
+		{
+			Instruction merge = make_instruction(Opcode::Phi, phi.type);
+			merge.location = phi.location;
+			merge.extra_first = append_operands(body, from_outer.data(), static_cast<uint32_t>(from_outer.size()));
+			merge.extra_count = static_cast<uint32_t>(from_outer.size());
+			const InstId id = append_instruction(body, merge);
+			body.instructions[id].result = append_temp(body, phi.type, id);
+			insert_after(body, outer, tail, id);
+			tail = id;
+			common = Value::temp(body.instructions[id].result);
+		}
+		from_inner.push_back(Value::block(outer));
+		from_inner.push_back(common);
+		body.instructions[i].extra_first = append_operands(
+			body, from_inner.data(), static_cast<uint32_t>(from_inner.size()));
+		body.instructions[i].extra_count = static_cast<uint32_t>(from_inner.size());
+	}
+	return true;
+}
+
 // The largest value an index operand may hold, unsigned: its literal, an
 // unsigned type's or a zero extension's range, or an `and` with a literal.
 // ~0 when unknown.
