@@ -1,0 +1,245 @@
+function @scaled_rows(%a : ptr, %rows : i32, %factor : i32) -> i32 {
+  block ^entry:
+    %enter = cmp gt i32 %rows, 0
+    branch %enter, ^split_1, ^done
+
+  block ^split_1:
+    %t2 = phi i32 [^next: %t36, ^entry: 0]
+    %t3 = phi i32 [^next: %t37, ^entry: 0]
+    %t4 = phi i32 [^next: %r1, ^entry: 0]
+    %t5 = phi i32 [^next: %sum, ^entry: 0]
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t6 = phi i32 [^split_1: 0, ^unrolled_2: %t31]
+    %t7 = phi i32 [^split_1: 0, ^unrolled_2: %t30]
+    %t8 = binary add i32 %t2, %t6
+    %t9 = index i32 %a, %t8
+    %t10 = load i32 %t9
+    %t11 = binary add i32 %t3, %t10
+    %t12 = binary xor i32 %t7, %t11
+    %t13 = binary add nowrap i32 %t6, 1
+    %t14 = binary add i32 %t2, %t13
+    %t15 = index i32 %a, %t14
+    %t16 = load i32 %t15
+    %t17 = binary add i32 %t3, %t16
+    %t18 = binary xor i32 %t12, %t17
+    %t19 = binary add nowrap i32 %t6, 2
+    %t20 = binary add i32 %t2, %t19
+    %t21 = index i32 %a, %t20
+    %t22 = load i32 %t21
+    %t23 = binary add i32 %t3, %t22
+    %t24 = binary xor i32 %t18, %t23
+    %t25 = binary add nowrap i32 %t6, 3
+    %t26 = binary add i32 %t2, %t25
+    %t27 = index i32 %a, %t26
+    %t28 = load i32 %t27
+    %t29 = binary add i32 %t3, %t28
+    %t30 = binary xor i32 %t24, %t29
+    %t31 = binary add nowrap i32 %t6, 4
+    %t32 = cmp ne i32 %t31, 16
+    branch %t32, ^unrolled_2, ^next
+
+  block ^next:
+    %t33 = phi i32 [^unrolled_2: %t30]
+    %sum = binary add i32 %t5, %t33
+    %r1 = binary add nowrap i32 %t4, 1
+    %t36 = binary add i32 %t2, 16
+    %t37 = binary add i32 %factor, %t3
+    %again = cmp lt i32 %r1, %rows
+    branch %again, ^split_1, ^done
+
+  block ^done:
+    %result = phi i32 [^entry: 0, ^next: %sum]
+    return i32 %result
+}
+function @row_xor(%a : ptr, %rows : i32) -> u32 {
+  block ^entry:
+    %enter = cmp gt i32 %rows, 0
+    branch %enter, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    %t2 = vector fromi32 -2128831035
+    jump ^split_2
+
+  block ^split_2:
+    %t3 = phi i32 [^loop_preheader_1: 0, ^split_2: %t79]
+    %t4 = phi i32 [^loop_preheader_1: 0, ^split_2: %r1]
+    %t5 = phi u32 [^loop_preheader_1: 0, ^split_2: %sum]
+    %row = copy i32 %t3
+    %t7 = index u32 %a, %row
+    %t8 = load v128 %t7
+    %t9 = vector pxor %t2, %t8
+    %t10 = binary add nowrap i32 %row, 4
+    %t11 = index u32 %a, %t10
+    %t12 = load v128 %t11
+    %t13 = vector pxor %t9, %t12
+    %t14 = binary add nowrap i32 %row, 8
+    %t15 = index u32 %a, %t14
+    %t16 = load v128 %t15
+    %t17 = vector pxor %t13, %t16
+    %t18 = binary add nowrap i32 %row, 12
+    %t19 = index u32 %a, %t18
+    %t20 = load v128 %t19
+    %t21 = vector pxor %t17, %t20
+    %t22 = binary add nowrap i32 %row, 16
+    %t23 = index u32 %a, %t22
+    %t24 = load v128 %t23
+    %t25 = vector pxor %t21, %t24
+    %t26 = binary add nowrap i32 %row, 20
+    %t27 = index u32 %a, %t26
+    %t28 = load v128 %t27
+    %t29 = vector pxor %t25, %t28
+    %t30 = binary add nowrap i32 %row, 24
+    %t31 = index u32 %a, %t30
+    %t32 = load v128 %t31
+    %t33 = vector pxor %t29, %t32
+    %t34 = binary add nowrap i32 %row, 28
+    %t35 = index u32 %a, %t34
+    %t36 = load v128 %t35
+    %t37 = vector pxor %t33, %t36
+    %t38 = binary add nowrap i32 %row, 32
+    %t39 = index u32 %a, %t38
+    %t40 = load v128 %t39
+    %t41 = vector pxor %t37, %t40
+    %t42 = binary add nowrap i32 %row, 36
+    %t43 = index u32 %a, %t42
+    %t44 = load v128 %t43
+    %t45 = vector pxor %t41, %t44
+    %t46 = binary add nowrap i32 %row, 40
+    %t47 = index u32 %a, %t46
+    %t48 = load v128 %t47
+    %t49 = vector pxor %t45, %t48
+    %t50 = binary add nowrap i32 %row, 44
+    %t51 = index u32 %a, %t50
+    %t52 = load v128 %t51
+    %t53 = vector pxor %t49, %t52
+    %t54 = binary add nowrap i32 %row, 48
+    %t55 = index u32 %a, %t54
+    %t56 = load v128 %t55
+    %t57 = vector pxor %t53, %t56
+    %t58 = binary add nowrap i32 %row, 52
+    %t59 = index u32 %a, %t58
+    %t60 = load v128 %t59
+    %t61 = vector pxor %t57, %t60
+    %t62 = binary add nowrap i32 %row, 56
+    %t63 = index u32 %a, %t62
+    %t64 = load v128 %t63
+    %t65 = vector pxor %t61, %t64
+    %t66 = binary add nowrap i32 %row, 60
+    %t67 = index u32 %a, %t66
+    %t68 = load v128 %t67
+    %t69 = vector pxor %t65, %t68
+    %t70 = vector pshufd %t69, 78
+    %t71 = vector pxor %t69, %t70
+    %t72 = vector pshufd %t71, 177
+    %t73 = vector pxor %t71, %t72
+    %t74 = vector toi32 %t73
+    %t75 = copy u32 %t74
+    %mixed = binary mul u32 %t5, 16777619
+    %sum = binary add u32 %mixed, %t75
+    %r1 = binary add nowrap i32 %t4, 1
+    %t79 = binary add nowrap i32 %t3, 64
+    %again = cmp lt i32 %r1, %rows
+    branch %again, ^split_2, ^done
+
+  block ^done:
+    %result = phi u32 [^entry: 0, ^split_2: %sum]
+    return u32 %result
+}
+function @skip_steps(%a : ptr, %n : i32) -> i32 {
+  block ^entry:
+    %enter = cmp gt i32 %n, 0
+    branch %enter, ^head, ^done
+
+  block ^head:
+    %i = phi i32 [^entry: 0, ^test: %i1, ^wide: %i2]
+    %s = phi i32 [^entry: 0, ^test: %s1, ^wide: %s1]
+    %p = index i32 %a, %i
+    %v = load i32 %p
+    %s1 = binary add i32 %s, %v
+    %i1 = binary add nowrap i32 %i, 1
+    %more = cmp lt i32 %i1, %n
+    branch %more, ^test, ^done
+
+  block ^test:
+    %odd = binary and i32 %v, 1
+    %even = cmp eq i32 %odd, 0
+    branch %even, ^head, ^wide
+
+  block ^wide:
+    %i2 = binary add nowrap i32 %i, 2
+    %again = cmp lt i32 %i2, %n
+    branch %again, ^head, ^done
+
+  block ^done:
+    %result = phi i32 [^entry: 0, ^head: %s1, ^wide: %s1]
+    return i32 %result
+}
+function @lower_bound(%a : ptr, %n : i64, %x : i32) -> i64 {
+  block ^entry:
+    %more = cmp gt i64 %n, 0
+    branch %more, ^probe, ^done
+
+  block ^probe:
+    %t2 = phi i64 [^loop_preheader_4: %t14, ^entry: %n]
+    %t3 = phi i64 [^loop_preheader_4: %t13, ^entry: 0]
+    %half = binary shr i64 %t2, 1
+    %mid = binary add i64 %half, %t3
+    %p = index i32 %a, %mid
+    %v = load i32 %p
+    %below = cmp lt i32 %v, %x
+    branch %below, ^right, ^loop_preheader_4
+
+  block ^right:
+    %first1 = binary add i64 %mid, 1
+    %rest = binary sub i64 %t2, %half
+    %len1 = binary sub i64 %rest, 1
+    jump ^loop_preheader_4
+
+  block ^done:
+    %t12 = phi i64 [^entry: 0, ^loop_preheader_4: %t13]
+    return i64 %t12
+
+  block ^loop_preheader_4:
+    %t13 = phi i64 [^probe: %t3, ^right: %first1]
+    %t14 = phi i64 [^probe: %half, ^right: %len1]
+    %t15 = cmp gt i64 %t14, 0
+    branch %t15, ^probe, ^done
+}
+function @gapped_sum(%a : ptr, %sums : ptr, %n : i64, %w : i64, %gap : i64) -> i32 {
+  block ^entry:
+    %go = cmp gt i64 %n, 0
+    branch %go, ^word, ^done
+
+  block ^word:
+    %t2 = phi i32 [^loop_preheader_4: %s1, ^entry: 0]
+    %t3 = phi i64 [^loop_preheader_4: %t18, ^entry: 0]
+    %t4 = phi i64 [^loop_preheader_4: %t17, ^entry: %w]
+    %t5 = phi i64 [^loop_preheader_4: %t16, ^entry: 0]
+    %q = index i32 %a, %t5
+    %v = load i32 %q
+    %s1 = binary add i32 %v, %t2
+    %p1 = binary add i64 %t5, 1
+    %at = cmp eq i64 %p1, %t4
+    branch %at, ^skip, ^loop_preheader_4
+
+  block ^skip:
+    %o = index i32 %sums, %t3
+    store i32 %s1, %o
+    %r1 = binary add i64 %t3, 1
+    %p2 = binary add i64 %gap, %p1
+    %end1 = binary add i64 %w, %p2
+    jump ^loop_preheader_4
+
+  block ^done:
+    %t15 = phi i32 [^entry: 0, ^loop_preheader_4: %s1]
+    return i32 %t15
+
+  block ^loop_preheader_4:
+    %t16 = phi i64 [^word: %p1, ^skip: %p2]
+    %t17 = phi i64 [^word: %t4, ^skip: %end1]
+    %t18 = phi i64 [^word: %t3, ^skip: %r1]
+    %t19 = cmp lt i64 %t16, %n
+    branch %t19, ^word, ^done
+}

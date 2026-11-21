@@ -571,6 +571,14 @@ bool finish_loops(FunctionContext& context, const OptimizerOptions& options)
 {
 	const int level = options.level;
 	bool changed = false;
+	// (Before the latches of a small loop join: a nest that shares its
+	// header is two loops, and the outer loop's values, phis of the inner
+	// header no longer, are invariant in the inner one.)
+	if (level >= 3 && RUN_PASS(separate_loop_nests))
+	{
+		RUN_PASS(simplify_values);
+		changed = true;
+	}
 	changed = RUN_PASS(hoist_loop_loads) || changed;
 	changed = hoist_loops(context) || changed;
 	const bool copies = !options.minimize_size && copies_code(context);
@@ -599,6 +607,10 @@ bool finish_loops(FunctionContext& context, const OptimizerOptions& options)
 		if (RUN_PASS(forward_memory))
 			RUN_PASS(simplify_values);
 		RUN_PASS(remove_dead_code);
+		// (A rotated outer loop whose body begins with a loop shares that
+		// loop's header.)
+		if (RUN_PASS(separate_loop_nests))
+			RUN_PASS(simplify_values);
 		hoist_loops(context);
 		changed = true;
 	}

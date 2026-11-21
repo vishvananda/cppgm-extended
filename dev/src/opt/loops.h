@@ -61,6 +61,15 @@ bool make_loop_preheader(lowir::FunctionBody& body, const Cfg& cfg, const LoopFo
 // the header's phis took from the latches when those differ. False for a
 // loop of one latch or with a handler latch. The graph changes.
 bool make_loop_latch(lowir::FunctionBody& body, const Cfg& cfg, const LoopForest& forest, uint32_t loop);
+// Gives a loop nested in loop `loop` at its header (a do-while loop that
+// begins the outer body) a header of its own: the back edges from latches
+// whose cycle through the header holds no other latch stay; the others and
+// the entries go to a new outer header in front, whose phis merge what they
+// bring. The inner loop must be counted (each inner latch tests a counter),
+// leave only into the outer loop, and keep a value that an outer latch
+// steps. False when every latch or none is such, when that is not so (the
+// paths are then one loop's), or for a handler. The graph changes.
+bool separate_nested_loop(lowir::FunctionBody& body, const Cfg& cfg, const LoopForest& forest, uint32_t loop);
 
 // For a pass that rewrites several loops between finding them: marks in
 // `touched` (per block) the blocks a rewrite of `l` may change -- the loop, the

@@ -1,0 +1,205 @@
+global @cells : obj<2048x16> = {
+  zero 2048
+}
+
+global @sorted : obj<2048x16> = {
+  zero 2048
+}
+
+global @sums : obj<256x16> = {
+  zero 256
+}
+
+function @fill() -> void {
+  block ^entry:
+    jump ^loop
+  block ^loop:
+    %i = phi i32 [^entry: 0, ^loop: %next]
+    %u = copy u32 %i
+    %m = binary mul u32 %u, 2654435761
+    %w = binary add u32 %m, 40503
+    %p = index u32 @cells, %i
+    store u32 %w, %p
+    %t = binary mul i32 %i, 3
+    %q = index i32 @sorted, %i
+    store i32 %t, %q
+    %next = binary add i32 %i, 1
+    %more = cmp lt i32 %next, 512
+    branch %more, ^loop, ^done
+  block ^done:
+    return void
+}
+
+# The nests with a header for each loop, as written in source.
+function @oracle_scaled(%rows : i32, %factor : i32) -> i32 {
+  block ^entry:
+    jump ^outer
+  block ^outer:
+    %r = phi i32 [^entry: 0, ^next: %r1]
+    %total = phi i32 [^entry: 0, ^next: %sum]
+    %go = cmp lt i32 %r, %rows
+    branch %go, ^start, ^done
+  block ^start:
+    jump ^inner
+  block ^inner:
+    %j = phi i32 [^start: 0, ^inner: %j1]
+    %s = phi i32 [^start: 0, ^inner: %s1]
+    %scale = binary mul i32 %r, %factor
+    %row = binary mul i32 %r, 16
+    %k = binary add i32 %row, %j
+    %p = index i32 @cells, %k
+    %v = load i32 %p
+    %w = binary add i32 %v, %scale
+    %s1 = binary xor i32 %s, %w
+    %j1 = binary add i32 %j, 1
+    %more = cmp lt i32 %j1, 16
+    branch %more, ^inner, ^next
+  block ^next:
+    %sum = binary add i32 %total, %s1
+    %r1 = binary add i32 %r, 1
+    jump ^outer
+  block ^done:
+    return i32 %total
+}
+
+function @oracle_xor(%rows : i32) -> u32 {
+  block ^entry:
+    jump ^outer
+  block ^outer:
+    %r = phi i32 [^entry: 0, ^next: %r1]
+    %total = phi u32 [^entry: 0, ^next: %sum]
+    %go = cmp lt i32 %r, %rows
+    branch %go, ^start, ^done
+  block ^start:
+    jump ^inner
+  block ^inner:
+    %j = phi i32 [^start: 0, ^inner: %j1]
+    %x = phi u32 [^start: 2166136261, ^inner: %x1]
+    %row = binary mul i32 %r, 64
+    %k = binary add i32 %row, %j
+    %p = index u32 @cells, %k
+    %v = load u32 %p
+    %x1 = binary xor u32 %x, %v
+    %j1 = binary add i32 %j, 1
+    %more = cmp lt i32 %j1, 64
+    branch %more, ^inner, ^next
+  block ^next:
+    %mixed = binary mul u32 %total, 16777619
+    %sum = binary add u32 %mixed, %x1
+    %r1 = binary add i32 %r, 1
+    jump ^outer
+  block ^done:
+    return u32 %total
+}
+
+# One step past an even word, two past an odd one.
+function @oracle_skip(%n : i32) -> i32 {
+  block ^entry:
+    jump ^loop
+  block ^loop:
+    %i = phi i32 [^entry: 0, ^body: %next]
+    %s = phi i32 [^entry: 0, ^body: %s1]
+    %go = cmp lt i32 %i, %n
+    branch %go, ^body, ^done
+  block ^body:
+    %p = index i32 @cells, %i
+    %v = load i32 %p
+    %s1 = binary add i32 %s, %v
+    %odd = binary and i32 %v, 1
+    %step = binary add i32 %odd, 1
+    %next = binary add i32 %i, %step
+    jump ^loop
+  block ^done:
+    return i32 %s
+}
+
+# The count of sorted words below %x.
+function @oracle_bound(%x : i32) -> i64 {
+  block ^entry:
+    jump ^loop
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %c = phi i64 [^entry: 0, ^body: %c1]
+    %go = cmp lt i64 %i, 512
+    branch %go, ^body, ^done
+  block ^body:
+    %p = index i32 @sorted, %i
+    %v = load i32 %p
+    %lt = cmp lt i32 %v, %x
+    %one = select i64 %lt, 1, 0
+    %c1 = binary add i64 %c, %one
+    %next = binary add i64 %i, 1
+    jump ^loop
+  block ^done:
+    return i64 %c
+}
+
+# The sum of the sorted words below %n whose index is 0 to 4 modulo 8.
+function @oracle_gapped(%n : i64) -> i32 {
+  block ^entry:
+    jump ^loop
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %s = phi i32 [^entry: 0, ^body: %s1]
+    %go = cmp lt i64 %i, %n
+    branch %go, ^body, ^done
+  block ^body:
+    %m = binary and i64 %i, 7
+    %in = cmp lt i64 %m, 5
+    %p = index i32 @sorted, %i
+    %v = load i32 %p
+    %add = select i32 %in, %v, 0
+    %s1 = binary add i32 %s, %add
+    %next = binary add i64 %i, 1
+    jump ^loop
+  block ^done:
+    return i32 %s
+}
+
+# The bits of the checks that fail, for each count of rows (and of words, and
+# for a searched value).
+function @check(%rows : i32) -> i32 {
+  block ^entry:
+    %a = addr @cells
+    %s = call i32 @scaled_rows(%a, %rows, 77777)
+    %es = call i32 @oracle_scaled(%rows, 77777)
+    %x = call u32 @row_xor(%a, %rows)
+    %ex = call u32 @oracle_xor(%rows)
+    %bs = cmp ne i32 %s, %es
+    %bx = cmp ne u32 %x, %ex
+    %cs = select i32 %bs, 1, 0
+    %cx = select i32 %bx, 2, 0
+    %pair = binary or i32 %cs, %cx
+    %words = binary mul i32 %rows, 64
+    %k = call i32 @skip_steps(%a, %words)
+    %ek = call i32 @oracle_skip(%words)
+    %bk = cmp ne i32 %k, %ek
+    %ck = select i32 %bk, 4, 0
+    %three = binary or i32 %pair, %ck
+    %b = addr @sorted
+    %key = binary mul i32 %rows, 191
+    %f = call i64 @lower_bound(%b, 512, %key)
+    %ef = call i64 @oracle_bound(%key)
+    %bf = cmp ne i64 %f, %ef
+    %cf = select i32 %bf, 8, 0
+    %four = binary or i32 %three, %cf
+    %n = copy i64 %words
+    %out = addr @sums
+    %g = call i32 @gapped_sum(%b, %out, %n, 5, 3)
+    %eg = call i32 @oracle_gapped(%n)
+    %bg = cmp ne i32 %g, %eg
+    %cg = select i32 %bg, 16, 0
+    %bits = binary or i32 %four, %cg
+    return i32 %bits
+}
+
+function @main() -> i32 {
+  block ^entry:
+    call void @fill()
+    %a = call i32 @check(8)
+    %b = call i32 @check(1)
+    %c = call i32 @check(0)
+    %ab = binary or i32 %a, %b
+    %all = binary or i32 %ab, %c
+    return i32 %all
+}
