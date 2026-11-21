@@ -12,6 +12,7 @@
 	M(MulW, 0x1b007c00) \
 	M(Smull, 0x9b207c00) \
 	M(Umull, 0x9ba07c00) \
+	M(Smulh, 0x9b407c00) \
 	M(SDiv, 0x9ac00c00) \
 	M(UDiv, 0x9ac00800) \
 	M(SDivW, 0x1ac00c00) \

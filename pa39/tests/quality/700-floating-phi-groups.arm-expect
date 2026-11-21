@@ -1,0 +1,21 @@
+{
+  "source": true,
+  "units": [
+    "700-floating-phi-groups.t.1"
+  ],
+  "llvm_interop": true,
+  "commands": [
+    {
+      "exit": 69,
+      "stdout": ""
+    }
+  ],
+  "quality": {
+    "levels": [3],
+    "functions": {
+      "row": {
+        "instructions": 236
+      }
+    }
+  }
+}

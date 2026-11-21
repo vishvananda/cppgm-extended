@@ -100,31 +100,158 @@ bool Selector::constant_quotient(
 	return true;
 }
 
-// Use a widening multiply when the shared word-division plan fits one.
-// The correction changes the signed quotient from floor to truncation.
-bool Selector::constant_word_division(const lowir::Instruction& inst, uint32_t divisor, unsigned lhs, unsigned dst)
+namespace {
+// The multiply that replaces a division or remainder by a 32-bit or 64-bit
+// literal other than 0, 1 and the powers of two (a 32-bit one at most
+// INT32_MAX, a 64-bit signed one not -1), as on x86-64:
+// - 32 bits: the shared word plan in a widening multiply, its multiplier
+//   below 2^32; a signed multiplier above INT32_MAX is a negative word, so
+//   the dividend times 2^32 is added to the product;
+// - 64 bits: the high half of the product (SMULH, UMULH) by Hacker's
+//   Delight's multiplier, with the dividend's correction when signed, and
+//   with the 65-bit fix-up or the even divisor's zeros shifted out of the
+//   dividend first when unsigned.
+// A signed quotient adds its sign bit (truncation toward zero); a
+// remainder is the dividend minus the quotient times the divisor.
+struct DivisionPlan
 {
-	if (divisor <= 1 || divisor > INT32_MAX || (divisor & (divisor - 1)) == 0)
+	uint64_t multiplier;
+	unsigned shift, zeros;
+	bool sign, remainder, add;
+};
+
+bool division_plan(BinaryOp op, uint64_t raw, unsigned bits, DivisionPlan& plan)
+{
+	plan.sign = op == BinaryOp::Div || op == BinaryOp::Mod;
+	plan.remainder = op == BinaryOp::Mod || op == BinaryOp::UMod;
+	plan.zeros = 0;
+	plan.add = false;
+	if (!plan.sign && op != BinaryOp::UDiv && op != BinaryOp::UMod)
 		return false;
-	const auto op = static_cast<BinaryOp>(inst.sub);
-	const bool sign = op == BinaryOp::Div || op == BinaryOp::Mod;
-	const bool remainder = op == BinaryOp::Mod || op == BinaryOp::UMod;
-	const auto magic = machine::word_magic(divisor, sign ? 31 : 32);
-	if (magic.multiplier > (sign ? static_cast<uint64_t>(INT32_MAX) : UINT32_MAX))
-		return false;
-	const unsigned quotient = remainder ? 9 : dst;
-	constant(11, magic.multiplier);
-	out_.emit(sign ? Op::Smull : Op::Umull, 9, lhs, 11);
-	out_.emit(sign ? Op::Sbfm : Op::Ubfm, sign ? 9 : quotient, 9, 0, (magic.shift << 16) | (63u << 10));
-	if (sign)
-		out_.emit(Op::AddW, quotient, 9, lhs, (1u << 22) | (31u << 10));
-	if (remainder)
+	if (bits == 32)
 	{
-		constant(11, divisor);
-		out_.emit(Op::MsubW, dst, quotient, 11, lhs << 10);
+		const auto divisor = static_cast<uint32_t>(raw);
+		if (divisor <= 1 || divisor > INT32_MAX || (divisor & (divisor - 1)) == 0)
+			return false;
+		const auto magic = machine::word_magic(divisor, plan.sign ? 31 : 32);
+		plan.multiplier = magic.multiplier;
+		plan.shift = magic.shift;
+		plan.add = plan.sign && magic.multiplier > INT32_MAX;
+		return magic.multiplier <= UINT32_MAX;
+	}
+	if (bits != 64)
+		return false;
+	const uint64_t magnitude = plan.sign && static_cast<int64_t>(raw) < 0 ? 0 - raw : raw;
+	if (magnitude <= 2 || (magnitude & (magnitude - 1)) == 0)
+		return false;
+	if (plan.sign)
+	{
+		const auto magic = machine::signed_magic(static_cast<int64_t>(raw));
+		plan.multiplier = static_cast<uint64_t>(magic.multiplier);
+		plan.shift = magic.shift;
+		return true;
+	}
+	auto magic = machine::unsigned_magic(raw);
+	if (magic.add && !(raw & 1))
+	{
+		plan.zeros = __builtin_ctzll(raw);
+		magic = machine::narrow_unsigned_magic(raw >> plan.zeros, 64 - plan.zeros);
+	}
+	plan.multiplier = magic.multiplier;
+	plan.shift = magic.shift;
+	plan.add = magic.add;
+	return true;
+}
+}
+
+bool division_constants(
+	const lowir::Instruction& inst, const FunctionBody& body, uint64_t& multiplier, uint64_t& divisor)
+{
+	const auto op = static_cast<BinaryOp>(inst.sub);
+	DivisionPlan plan;
+	if (inst.op != Opcode::Binary || !inst.type.is_integer() || !inst.ops[1].is(ValueKind::Integer) ||
+		((op == BinaryOp::Div || op == BinaryOp::UDiv) && (inst.flags & IF_EXACT)))
+		return false;
+	const unsigned bits = integer_bits(inst.type.kind());
+	const uint64_t raw = body.literals[inst.ops[1].index].low;
+	if (!division_plan(op, raw, bits, plan))
+		return false;
+	multiplier = plan.multiplier;
+	divisor = plan.remainder ? (bits == 32 ? static_cast<uint32_t>(raw) : raw) : 0;
+	return true;
+}
+
+// A constant held through the loop (hold_division_constants) is read from
+// its register.
+bool Selector::constant_division(
+	const lowir::Instruction& inst, uint64_t raw, unsigned bits, unsigned lhs, unsigned dst)
+{
+	DivisionPlan plan;
+	if (!division_plan(static_cast<BinaryOp>(inst.sub), raw, bits, plan))
+		return false;
+	// (A combination can select a rewritten copy of the instruction.)
+	const bool listed = &inst >= body_.instructions.data() &&
+		&inst < body_.instructions.data() + body_.instructions.size();
+	const auto id = listed ? static_cast<InstId>(&inst - body_.instructions.data()) : kNoId;
+	const auto held = std::lower_bound(held_divisions_.begin(), held_divisions_.end(), std::make_pair(id, 0u));
+	const uint32_t regs = held != held_divisions_.end() && held->first == id ? held->second : ~0u;
+	const unsigned multiplier = regs & 255, divisor_reg = (regs >> 8) & 255;
+	const unsigned quotient = plan.remainder ? 9 : dst, factor = multiplier == 255 ? 11 : multiplier;
+	if (multiplier == 255)
+		constant(11, plan.multiplier);
+	if (bits == 32)
+	{
+		out_.emit(plan.sign ? Op::Smull : Op::Umull, 9, lhs, factor);
+		if (plan.add)
+			out_.emit(Op::Add, 9, 9, lhs, 32u << 10);
+		out_.emit(plan.sign ? Op::Sbfm : Op::Ubfm, plan.sign ? 9 : quotient, 9, 0, (plan.shift << 16) | (63u << 10));
+		if (plan.sign)
+			out_.emit(Op::AddW, quotient, 9, lhs, (1u << 22) | (31u << 10));
+	}
+	else if (plan.sign)
+	{
+		out_.emit(Op::Smulh, 9, lhs, factor);
+		const bool positive = static_cast<int64_t>(raw) > 0;
+		if (positive != (static_cast<int64_t>(plan.multiplier) > 0))
+			out_.emit(positive ? Op::Add : Op::Sub, 9, 9, lhs);
+		if (plan.shift)
+			out_.emit(Op::Sbfm, 9, 9, 0, (plan.shift << 16) | (63u << 10));
+		out_.emit(Op::Add, quotient, 9, 9, (1u << 22) | (63u << 10));
+	}
+	else
+	{
+		if (plan.zeros)
+			out_.emit(Op::Ubfm, 9, lhs, 0, (plan.zeros << 16) | (63u << 10));
+		out_.emit(Op::Umulh, 9, plan.zeros ? 9 : lhs, factor);
+		unsigned shift = plan.shift;
+		if (plan.add)
+		{
+			// ((x - t) >> 1) + t, then the remaining shift.
+			out_.emit(Op::Sub, 11, lhs, 9);
+			out_.emit(Op::Add, 9, 9, 11, (1u << 22) | (1u << 10));
+			--shift;
+		}
+		if (shift)
+			out_.emit(Op::Ubfm, quotient, 9, 0, (shift << 16) | (63u << 10));
+		else if (quotient != 9)
+			out_.emit(Op::Orr, quotient, 31, 9);
+	}
+	if (plan.remainder)
+	{
+		if (divisor_reg == 255)
+			constant(11, bits == 32 ? static_cast<uint32_t>(raw) : raw);
+		out_.emit(bits == 32 ? Op::MsubW : Op::Msub, dst, quotient, divisor_reg == 255 ? 11 : divisor_reg, lhs << 10);
 	}
 	save(dst, inst.result, true);
 	return true;
+}
+
+// The constants held through the loops that `block` enters, built at its start.
+void Selector::build_held_constants(BlockId block)
+{
+	for (const auto& held : held_constants_)
+		if (held.block == block)
+			constant(held.reg, held.value);
 }
 
 bool Selector::simple_binary(const lowir::Instruction& inst)
@@ -189,9 +316,9 @@ bool Selector::simple_binary(const lowir::Instruction& inst)
 		const uint64_t factor = w ? static_cast<uint32_t>(raw) : raw;
 		if ((op == BinaryOp::Div || op == BinaryOp::UDiv) && constant_quotient(inst, raw, bits, left, dest))
 			return true;
-		if (level_ >= 3 && bits == 32 &&
+		if (level_ >= 3 && !inst.type.is_pointer() &&
 			(op == BinaryOp::Div || op == BinaryOp::Mod || op == BinaryOp::UDiv || op == BinaryOp::UMod) &&
-			constant_word_division(inst, static_cast<uint32_t>(raw), left, dest))
+			constant_division(inst, raw, bits, left, dest))
 			return true;
 		if (op == BinaryOp::Mul && factor > 2 && ((factor - 1) & (factor - 2)) == 0)
 		{

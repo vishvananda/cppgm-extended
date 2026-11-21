@@ -263,26 +263,79 @@ bool fits_unsigned(const FunctionBody& body, Value value, unsigned bits, unsigne
 			return false;
 	return true;
 }
+// Whether `merge` is a minimum or maximum that lane_bound (vector.cpp)
+// selects as a scalar bound: read only by the next extraction of its low lane.
+bool lane_bound_shape(const FunctionBody& body, const Instruction& merge, const std::vector<uint32_t>& reads)
+{
+	const auto op = static_cast<VectorOp>(merge.sub);
+	const bool wide = op == VectorOp::Minpd || op == VectorOp::Maxpd;
+	if (merge.op != Opcode::Vector || (!wide && op != VectorOp::Minps && op != VectorOp::Maxps) ||
+		merge.next == kNoId || merge.result == kNoId || reads[merge.result] != 1)
+		return false;
+	const auto& extract = body.instructions[merge.next];
+	return extract.op == Opcode::Vector &&
+		static_cast<VectorOp>(extract.sub) == (wide ? VectorOp::Tof64 : VectorOp::Tof32) &&
+		extract.ops[0] == Value::temp(merge.result);
+}
+
+// The reads of each temp, and those by lane bounds (lane_bound_shape).
+void lane_reads(const FunctionBody& body, std::vector<uint32_t>& reads, std::vector<uint32_t>& bounds)
+{
+	reads.assign(body.temps.size(), 0);
+	bounds.assign(body.temps.size(), 0);
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+			opt::for_each_operand(body, body.instructions[i], [&](Value v) {
+				if (v.is(ValueKind::Temp))
+					++reads[v.index];
+			});
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+			if (lane_bound_shape(body, body.instructions[i], reads))
+				for (unsigned k = 0; k < 2; ++k)
+					if (body.instructions[i].ops[k].is(ValueKind::Temp))
+						++bounds[body.instructions[i].ops[k].index];
+}
 } // namespace
 
-// A copy or conversion that preserves all bits can share its source's
-// canonical register value or eight-byte spill. Account for every later use
+// A copy or conversion that preserves all bits, or a truncation whose
+// readers take only its low bits, can share its source's canonical
+// register value or eight-byte spill. Account for every later use
 // before allocating registers, including outgoing arguments and phi edges.
+// A floating value made a vector that only lane bounds read is that value in
+// a SIMD register's low lane: it shares the value's register and spill, and
+// lane_bound reads the value.
 std::vector<uint32_t> scalar_aliases(const FunctionBody& body)
 {
-	std::vector<uint32_t> parent;
+	std::vector<uint32_t> parent, reads, bounds;
+	std::vector<uint8_t> loose;
 	for (TempId id = body.parameter_count; id < body.temps.size(); ++id)
 	{
 		const InstId def = body.temps[id].def;
 		if (def == kNoId)
 			continue;
 		const auto& inst = body.instructions[def];
+		const bool view = inst.op == Opcode::Vector &&
+			(inst.sub == static_cast<unsigned>(VectorOp::Fromf64) ||
+				inst.sub == static_cast<unsigned>(VectorOp::Fromf32));
 		if (!inst.ops[0].is(ValueKind::Temp) || inst.result != id ||
-			(inst.op != Opcode::Copy && inst.op != Opcode::Convert))
+			(inst.op != Opcode::Copy && inst.op != Opcode::Convert && !view))
 			continue;
 		const auto src = inst.ops[0].index;
 		const Type from = body.temps[src].type;
-		if (inst.op == Opcode::Copy)
+		if (view)
+		{
+			const auto kind = inst.sub == static_cast<unsigned>(VectorOp::Fromf64) ? TypeKind::F64 : TypeKind::F32;
+			if (src >= id || from != Type::scalar(kind))
+				continue;
+			if (reads.empty())
+				lane_reads(body, reads, bounds);
+			// The value then has more than one reader, so no selection that
+			// takes a value's one reader along changes.
+			if (!reads[id] || bounds[id] != reads[id] || reads[id] + reads[src] < 3)
+				continue;
+		}
+		else if (inst.op == Opcode::Copy)
 		{
 			// Copy and conversion chains terminate at an SSA producer. In
 			// particular, the phi on a loop backedge retains its own home.
@@ -295,8 +348,19 @@ std::vector<uint32_t> scalar_aliases(const FunctionBody& body)
 			const auto bits = integer_bits(inst.type.kind());
 			unsigned budget = 16;
 			if (!bits || bits >= 64 || !from.is_integer() || integer_bits(from.kind()) > 64 ||
-				from != convert_source_type(inst) || !fits_unsigned(body, inst.ops[0], bits, budget))
+				from != convert_source_type(inst))
 				continue;
+			// Otherwise a truncation whose readers take only its low bits
+			// (a loose value) holds its source's bits as they are.
+			if (!fits_unsigned(body, inst.ops[0], bits, budget))
+			{
+				if (src >= id)
+					continue;
+				if (loose.empty())
+					loose = loose_values(body, {}, true);
+				if (!loose[id])
+					continue;
+			}
 		}
 		else if (inst.sub != static_cast<unsigned>(ConvertOp::ZExt) || from != convert_source_type(inst) ||
 			!from.is_integer() || !inst.type.is_integer() || integer_bits(inst.type.kind()) > 64 ||

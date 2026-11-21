@@ -1,0 +1,22 @@
+{
+  "source": true,
+  "units": [
+    "700-lane-bound-views.t.1"
+  ],
+  "llvm_interop": true,
+  "commands": [
+    {
+      "exit": 3,
+      "stdout": ""
+    }
+  ],
+  "quality": {
+    "levels": [1, 2, 3],
+    "functions": {
+      "crowded": {
+        "instructions": 172,
+        "stack_ops": 11
+      }
+    }
+  }
+}

@@ -16,6 +16,21 @@ struct LiveRange;
 // The condition code that holds for an integer comparison predicate.
 unsigned integer_condition(unsigned predicate);
 
+// The multiplier constant_division builds for a division by a literal, and
+// the divisor a remainder also needs (0 for a quotient); false when that
+// selection does not apply.
+bool division_constants(
+	const lowir::Instruction& inst, const lowir::FunctionBody& body, uint64_t& multiplier, uint64_t& divisor);
+
+// A constant built in a register at the start of the block that enters a
+// loop and held through the loop.
+struct HeldConstant
+{
+	lowir::BlockId block;
+	unsigned reg;
+	uint64_t value;
+};
+
 class Selector
 {
 public:
@@ -56,6 +71,7 @@ private:
 	std::vector<CallRegisters> call_registers() const;
 	void allocate();
 	void call_result_homes();
+	void spill_homes(const std::vector<LiveRange>& ranges);
 	void parameter_homes(opt::Cfg& cfg);
 	void register_objects();
 	bool register_access(const lowir::Instruction& inst);
@@ -205,7 +221,11 @@ private:
 	unsigned operand_register(lowir::Value operand, lowir::Type type, unsigned scratch);
 	void narrow_left(lowir::Value src, lowir::Type type, lowir::TempId result, unsigned width, unsigned count);
 	bool constant_quotient(const lowir::Instruction& inst, uint64_t divisor, unsigned bits, unsigned lhs, unsigned dst);
-	bool constant_word_division(const lowir::Instruction& inst, uint32_t divisor, unsigned lhs, unsigned dst);
+	bool constant_division(const lowir::Instruction& inst, uint64_t raw, unsigned bits, unsigned lhs, unsigned dst);
+	void build_held_constants(lowir::BlockId block);
+	std::vector<HeldConstant> held_constants_;
+	// By division: the multiplier's register | the divisor's << 8 (255: none).
+	std::vector<std::pair<lowir::InstId, uint32_t>> held_divisions_;
 	bool simple_binary(const lowir::Instruction& inst);
 	lowir::InstId arithmetic_operand(const lowir::Instruction& producer);
 	void integer_unary(const lowir::Instruction& inst);

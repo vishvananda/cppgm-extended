@@ -449,6 +449,10 @@ void Selector::plan_forwarding(const std::vector<BlockId>& layout)
 		const BlockId to = body_.instructions[last].ops[0].index;
 		if (to == block || (!entry_moves_.empty() && entry_moves_[block] != kNoId))
 			continue;
+		// The block that enters a loop builds the constants the loop holds.
+		if (std::any_of(held_constants_.begin(), held_constants_.end(),
+				[&](const HeldConstant& held) { return held.block == block; }))
+			continue;
 		if (out_.exceptions)
 		{
 			const auto& plan = *out_.exceptions;

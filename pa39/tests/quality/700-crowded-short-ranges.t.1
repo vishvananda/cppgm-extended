@@ -1,0 +1,27 @@
+extern "C" int** mmult(int** m1, int** m2, int** m3);
+
+#define SIZE 28
+static int a[SIZE][SIZE], b[SIZE][SIZE], c[SIZE][SIZE];
+static int* ra[SIZE];
+static int* rb[SIZE];
+static int* rc[SIZE];
+
+int main() {
+    for (int i = 0; i < SIZE; ++i) {
+        ra[i] = a[i];
+        rb[i] = b[i];
+        rc[i] = c[i];
+        for (int j = 0; j < SIZE; ++j) {
+            a[i][j] = i * SIZE + j + 1;
+            b[i][j] = (i + 3) * (j + 5) % 17;
+        }
+    }
+    int** m = 0;
+    for (int n = 0; n < 3; ++n)
+        m = mmult(ra, rb, rc);
+    unsigned h = 0;
+    for (int i = 0; i < SIZE; ++i)
+        for (int j = 0; j < SIZE; ++j)
+            h = h * 31 + (unsigned)m[i][j];
+    return (int)(h & 127);
+}

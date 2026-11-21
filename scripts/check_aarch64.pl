@@ -166,7 +166,9 @@ for my $level (@{$expect->{levels} // [0..3]}) {
                     pair_ops => scalar(grep { /^(?:ldp|stp)\b/ } @memory),
                     sp_uses => scalar(grep { /\bsp\b/ } @ins), back_jumps => $back_jumps,
                     flag_values => scalar(grep { /^csetm?\b/ } @ins), jumps => scalar(grep { /^b\s/ } @ins),
-                    conditional_branches => scalar(grep { /^(?:b\.\w+|cbn?z|tbn?z)\b/ } @ins));
+                    conditional_branches => scalar(grep { /^(?:b\.\w+|cbn?z|tbn?z)\b/ } @ins),
+                    divides => scalar(grep { /^[su]div\b/ } @ins),
+                    register_moves => scalar(grep { /^mov\s+[xw]\d+, [xw]\d+$/ } @ins));
                 check_bounds(\%counts, $quality->{functions}{$symbol} // {}, "$test: O$level $symbol", 'AArch64');
                 check_bounds(\%counts, $quality->{own_functions}{$symbol} // {}, "$test: O$level $symbol", 'AArch64')
                     if $unit eq $object;

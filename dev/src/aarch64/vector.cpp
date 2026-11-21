@@ -489,7 +489,13 @@ InstId Selector::lane_bound(const lowir::Instruction& merge)
 	const bool number = made != kNoId && body_.instructions[made].op == Opcode::Vector &&
 		static_cast<VectorOp>(body_.instructions[made].sub) == from &&
 		number_bound(body_, body_.instructions[made].ops[0], wide);
-	const unsigned lhs = vector_value(merge.ops[0], 16), rhs = vector_value(second, 17);
+	// A vector that only lane bounds read shares its scalar's home (scalar_aliases).
+	const auto lane = [&](Value v, unsigned scratch) {
+		return v.is(ValueKind::Temp) && !aliases_.empty() && aliases_[v.index] != v.index
+			? fp_operand(Value::temp(aliases_[v.index]), extract.type, scratch)
+			: vector_value(v, scratch);
+	};
+	const unsigned lhs = lane(merge.ops[0], 16), rhs = lane(second, 17);
 	const unsigned dest = vectors_[extract.result] == kNoId ? 16 : vectors_[extract.result];
 	scalar_bound(op == VectorOp::Maxps || op == VectorOp::Maxpd, wide, dest, lhs, rhs, number);
 	save_fp(dest, extract.result);

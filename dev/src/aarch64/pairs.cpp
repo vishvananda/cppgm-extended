@@ -104,6 +104,7 @@ bool integer_effects(const Instruction& ins, Effects& e)
 	case Op::MulW:
 	case Op::Smull:
 	case Op::Umull:
+	case Op::Smulh:
 	case Op::Umulh:
 	case Op::Madd:
 	case Op::MaddW:

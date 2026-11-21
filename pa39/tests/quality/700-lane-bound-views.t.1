@@ -1,0 +1,9 @@
+extern "C" double crowded(const double* x, int n, double lo, double hi);
+
+static const double values[16] = {0.5, 1.5, -2.0, 0.625, 0.375, 0.875, 0.125, 3.0,
+                                  -0.5, 0.25, 0.75, 1.25, 0.0625, 0.5, 0.9375, -1.0};
+
+int main() {
+    const double s = crowded(values, 4, 0.25, 0.75);
+    return static_cast<int>(s * 16) & 127;
+}

@@ -486,8 +486,11 @@ void Selector::value(unsigned reg, Value operand, Type type)
 			fp_move(false, vectors_[operand.index], reg, body_.temps[operand.index].type);
 		else if (registers_[operand.index] != kNoId)
 			move(reg, registers_[operand.index]);
+		// A single's home is written four bytes wide from a SIMD register; the
+		// load leaves the high bits of its general register clear.
 		else
-			access(false, reg, frame_base(), homes_[operand.index], 8);
+			access(false, reg, frame_base(), homes_[operand.index],
+				body_.temps[operand.index].type.kind() == TypeKind::F32 ? 4 : 8);
 		break;
 	case ValueKind::Slot:
 		address(reg, operand);

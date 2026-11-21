@@ -36,6 +36,9 @@ struct RangeFacts
 	std::vector<uint32_t> landings;
 };
 
+// The narrow integer values whose readers take only their low bits (narrow.cpp).
+std::vector<uint8_t> loose_values(
+	const lowir::FunctionBody& body, const std::vector<uint8_t>& word_accesses, bool before_allocation);
 std::vector<uint32_t> scalar_aliases(const lowir::FunctionBody& body);
 inline uint32_t representative(const std::vector<uint32_t>& aliases, uint32_t id)
 {

@@ -1,0 +1,40 @@
+extern "C" long quotients(const long* p, const long* q, const long* r, int count);
+extern "C" int weighted(const int* p, const int* q, int count);
+
+static const int size = 101;
+static long p[size], q[size], r[size];
+static int a[size], b[size];
+static const int counts[] = {0, 1, 3, 4, 5, 7, 8, 9, 15, 16, 17, 33, 100, 101};
+
+int main() {
+    unsigned long v = 0x9e3779b97f4a7c15ul;
+    for (int i = 0; i < size; ++i) {
+        v ^= v << 13;
+        v ^= v >> 7;
+        v ^= v << 17;
+        p[i] = (long)v;
+        q[i] = (long)(v >> 3) - 1000;
+        r[i] = -(long)(v >> 11);
+        a[i] = (int)(v >> 20) - (1 << 21);
+        b[i] = (int)v;
+    }
+    int bad = 0;
+    for (unsigned k = 0; k < sizeof(counts) / sizeof(counts[0]); ++k) {
+        const int count = counts[k];
+        long s = 0;
+        for (int n = 0; n < count; ++n)
+            s += p[n] / 5;
+        for (int n = 0; n < count; ++n)
+            s += q[n] / 7;
+        for (int n = 0; n < count; ++n)
+            s += r[n] / 9;
+        int t = 0;
+        for (int n = 0; n < count; ++n)
+            t += a[n] * 3 + (a[n] >> 2);
+        for (int n = 0; n < count; ++n)
+            t ^= b[n] * 5 - (b[n] >> 3);
+        bad |= quotients(p, q, r, count) != s ? 1 : 0;
+        bad |= weighted(a, b, count) != t ? 2 : 0;
+    }
+    return bad ? 100 + bad : 42;
+}

@@ -138,6 +138,7 @@ bool arithmetic_operands(const Instruction& ins, Operands& out)
 	case Op::MulW:
 	case Op::Smull:
 	case Op::Umull:
+	case Op::Smulh:
 	case Op::Umulh:
 	case Op::Madd:
 	case Op::MaddW:

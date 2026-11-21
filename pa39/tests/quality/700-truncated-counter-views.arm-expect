@@ -1,0 +1,24 @@
+{
+  "source": true,
+  "units": [
+    "700-truncated-counter-views.t.1"
+  ],
+  "llvm_interop": true,
+  "commands": [
+    {
+      "exit": 42,
+      "stdout": ""
+    }
+  ],
+  "quality": {
+    "levels": [3],
+    "functions": {
+      "quotients": {
+        "register_moves": 2
+      },
+      "weighted": {
+        "register_moves": 5
+      }
+    }
+  }
+}

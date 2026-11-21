@@ -1,0 +1,12 @@
+extern "C" double row(double ci0, unsigned long width, unsigned char* line);
+
+int main() {
+    unsigned char line[4];
+    unsigned sum = 0;
+    for (int y = 0; y < 32; ++y) {
+        row(2.0 * y / 32 - 1.0, 32, line);
+        for (int x = 0; x < 4; ++x)
+            sum = sum * 31 + line[x];
+    }
+    return sum & 127;
+}

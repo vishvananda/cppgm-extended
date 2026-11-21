@@ -1,0 +1,21 @@
+{
+  "source": true,
+  "units": [
+    "700-held-division-constants.t.1"
+  ],
+  "llvm_interop": true,
+  "commands": [
+    {
+      "exit": 73,
+      "stdout": ""
+    }
+  ],
+  "quality": {
+    "levels": [3],
+    "functions": {
+      "streams": {
+        "instructions": 112
+      }
+    }
+  }
+}

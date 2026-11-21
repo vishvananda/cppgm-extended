@@ -1,0 +1,65 @@
+extern "C" unsigned long quotients(const long* x, int n);
+extern "C" unsigned long negative_quotients(const long* x, int n);
+extern "C" unsigned long remainders(const long* x, int n);
+extern "C" unsigned long uquotients(const unsigned long* x, int n);
+extern "C" unsigned long ueven(const unsigned long* x, int n);
+extern "C" unsigned long uremainders(const unsigned long* x, int n);
+extern "C" unsigned words(const int* x, int n);
+extern "C" unsigned word_remainders(const int* x, int n);
+
+// Edge dividends: zero, units, the limits, multiples of the divisors and
+// their neighbours; then a xorshift sequence.
+static const unsigned long edges[] = {0, 1, 0xffffffffffffffff, 6, 7, 8, 13, 14, 15, 0xfffffffffffffff9,
+    0xfffffffffffffff2, 999, 1000, 1001, 0xfffffffffffffc18, 0xfffffffffffffc17, 1000000006, 1000000007,
+    1000000008, 0x7fffffffffffffff, 0x8000000000000000, 0x8000000000000001, 0x7ffffffffffffffe, 0xfffffffffffffffe,
+    0xfffffffffffffff8, 0xfffffffffffffff1, 0x7fffffff, 0x80000000, 0xffffffff, 0x100000000, 0x80000001, 0x7ffffff8,
+    119, 120, 121, 0xffffffffffffff88, 0xffffffffffffff87, 0x80000077, 0xffffff88};
+static const int count = 400;
+static unsigned long u[count];
+static long s[count];
+static int w[count];
+
+int main() {
+    const int edge_count = sizeof(edges) / sizeof(edges[0]);
+    unsigned long v = 88172645463325252ul;
+    for (int i = 0; i < count; ++i) {
+        if (i < edge_count)
+            u[i] = edges[i];
+        else {
+            v ^= v << 13;
+            v ^= v >> 7;
+            v ^= v << 17;
+            u[i] = v >> (i % 59);
+            if (i & 1)
+                u[i] = 0 - u[i];
+        }
+        s[i] = (long)u[i];
+        w[i] = (int)u[i];
+    }
+    // The divisors as values the compiler cannot see: hardware divides.
+    volatile long d7 = 7, dm1000 = -1000, dp = 1000000007;
+    volatile unsigned long u7 = 7, u14 = 14, u10 = 10;
+    volatile int w120 = 120, w7 = 7;
+    unsigned long e0 = 0, e1 = 0, e2 = 0, e3 = 0, e4 = 0, e5 = 0;
+    unsigned e6 = 0, e7 = 0;
+    for (int i = 0; i < count; ++i) {
+        e0 += (unsigned long)(s[i] / d7);
+        e1 += (unsigned long)(s[i] / dm1000);
+        e2 += (unsigned long)(s[i] % dp);
+        e3 += u[i] / u7;
+        e4 += u[i] / u14;
+        e5 += u[i] % u10;
+        e6 += (unsigned)(w[i] / w120);
+        e7 += (unsigned)(w[i] % w7);
+    }
+    int bad = 0;
+    bad |= quotients(s, count) != e0 ? 1 : 0;
+    bad |= negative_quotients(s, count) != e1 ? 2 : 0;
+    bad |= remainders(s, count) != e2 ? 4 : 0;
+    bad |= uquotients(u, count) != e3 ? 8 : 0;
+    bad |= ueven(u, count) != e4 ? 16 : 0;
+    bad |= uremainders(u, count) != e5 ? 32 : 0;
+    bad |= words(w, count) != e6 ? 64 : 0;
+    bad |= word_remainders(w, count) != e7 ? 128 : 0;
+    return bad ? 128 | (bad & 127) | (bad >> 7) : 42;
+}

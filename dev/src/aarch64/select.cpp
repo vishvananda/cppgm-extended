@@ -538,6 +538,7 @@ void Selector::run()
 		}
 		out_.bind(block);
 		entry_moves(block);
+		build_held_constants(block);
 		if (slow_entry != kNoId && block == body_.layout.front())
 		{
 			edge(block, slow_entry, true);

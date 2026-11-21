@@ -1,0 +1,22 @@
+{
+  "source": true,
+  "units": [
+    "700-crowded-short-ranges.t.1"
+  ],
+  "llvm_interop": true,
+  "commands": [
+    {
+      "exit": 112,
+      "stdout": ""
+    }
+  ],
+  "quality": {
+    "levels": [3],
+    "functions": {
+      "mmult": {
+        "instructions": 560,
+        "stack_ops": 160
+      }
+    }
+  }
+}

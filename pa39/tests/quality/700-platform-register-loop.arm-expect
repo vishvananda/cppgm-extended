@@ -1,0 +1,22 @@
+{
+  "source": true,
+  "target": "aarch64-linux-gnu",
+  "units": [
+    "700-platform-register-loop.t.1"
+  ],
+  "llvm_interop": true,
+  "commands": [
+    {
+      "exit": 96,
+      "stdout": ""
+    }
+  ],
+  "quality": {
+    "levels": [1, 2, 3],
+    "functions": {
+      "crowded": {
+        "stack_ops": 22
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "source": true,
+  "units": [
+    "700-crowded-floating-loop.t.1"
+  ],
+  "llvm_interop": true,
+  "commands": [
+    {
+      "exit": 114,
+      "stdout": ""
+    }
+  ],
+  "quality": {
+    "levels": [1, 2, 3],
+    "own_functions": {
+      "crowded": {
+        "instructions": 420,
+        "stack_ops": 90
+      }
+    }
+  }
+}

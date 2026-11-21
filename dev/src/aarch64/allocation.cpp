@@ -1,6 +1,7 @@
 #include "aarch64/selector.h"
 #include "aarch64/lifetimes.h"
 #include "opt/function_ir.h"
+#include "opt/loops.h"
 #include "machine/frame_lifetimes.h"
 #include "machine/interval_slots.h"
 #include "machine/register_pressure.h"
@@ -88,6 +89,13 @@ RegisterPressure register_pressure(const FunctionBody& body, const std::vector<L
 	return across_calls ? RegisterPressure::AcrossCalls : RegisterPressure::Fits;
 }
 
+// The factor of a range of `slots` read/write slots against the reference range.
+double length_factor(uint32_t slots)
+{
+	constexpr double reference_length = 1024; // Read/write slots in the reference range.
+	return std::sqrt(reference_length / std::max(1u, slots));
+}
+
 // In a saturated SIMD bank, one long range can force many short arithmetic
 // results into integer registers. Discount long ranges while retaining
 // the block frequency and use counts in the ordinary spill weights.
@@ -97,8 +105,75 @@ double simd_spill_priority(const FunctionBody& body, const LiveRange& range, con
 		return static_cast<double>(weight);
 	uint32_t slots = 0;
 	each_interval(range, segments, [&](uint32_t first, uint32_t last) { slots += last - first; });
-	constexpr double reference_length = 1024; // Read/write slots in the reference range.
-	return static_cast<double>(weight) * std::sqrt(reference_length / std::max(1u, slots));
+	return static_cast<double>(weight) * length_factor(slots);
+}
+
+// In a saturated general bank, the spill-weight order can leave a short
+// range no register where the heavier long ranges already fill the bank, so
+// each of many short results pays a store and a reload on its own chain
+// although one register would hold them in turn. Such a range takes the
+// SIMD bank's discounted priority, which puts it before the long ranges it
+// meets: a short integer or address range (at most `short_length` slots)
+// that would find no register in a model of the order. In the model a range
+// holds a register where fewer than `assignable` ranges before it hold one,
+// and, crossing a call, fewer than `preserved` crossing ranges. A phi's or a
+// move's partner keeps its place, where it shares its partner's register.
+// Returns whether a range was raised.
+bool raise_crowded_short_ranges(const FunctionBody& body, const std::vector<uint32_t>& aliases,
+	const std::vector<LiveRange>& ranges, const Segments& segments, const std::vector<uint32_t>& calls, uint32_t slots,
+	int32_t assignable, int32_t preserved, const std::vector<uint32_t>& order, std::vector<double>& priority)
+{
+	constexpr uint32_t short_length = 16;
+	std::vector<uint8_t> partner(body.temps.size(), 0);
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+		{
+			const auto& inst = body.instructions[i];
+			if ((inst.op == Opcode::Copy || inst.op == Opcode::Convert) && inst.result != kNoId &&
+				inst.ops[0].is(ValueKind::Temp))
+			{
+				partner[representative(aliases, inst.result)] = 1;
+				partner[representative(aliases, inst.ops[0].index)] = 1;
+			}
+		}
+	machine::PressureTree held, crossing;
+	bool raised = false;
+	held.build(std::vector<int32_t>(slots + 1, 0));
+	crossing.build(std::vector<int32_t>(slots + 1, 0));
+	for (uint32_t index : order)
+	{
+		const auto& range = ranges[index];
+		const auto type = body.temps[range.id].type;
+		if (range.first == kNoId || !(type.is_pointer() || (type.is_integer() && integer_bits(type.kind()) <= 64)))
+			continue;
+		uint32_t length = 0;
+		int32_t most = 0, most_crossing = 0;
+		bool across = false;
+		each_interval(range, segments, [&](uint32_t first, uint32_t last) {
+			length += last - first;
+			most = std::max(most, held.max(first, last));
+			const auto call = std::lower_bound(calls.begin(), calls.end(), first);
+			across |= call != calls.end() && *call < last;
+		});
+		if (across)
+			each_interval(range, segments, [&](uint32_t first, uint32_t last) {
+				most_crossing = std::max(most_crossing, crossing.max(first, last));
+			});
+		if (most < assignable && (!across || most_crossing < preserved))
+		{
+			each_interval(range, segments, [&](uint32_t first, uint32_t last) {
+				held.add(first, last, 1);
+				if (across)
+					crossing.add(first, last, 1);
+			});
+		}
+		else if (length <= short_length && range.affinity == kNoId && !partner[range.id])
+		{
+			priority[index] *= length_factor(length);
+			raised = true;
+		}
+	}
+	return raised;
 }
 
 // Let each scalar phi web's call-crossing members choose before its other
@@ -147,17 +222,21 @@ void prioritize_call_webs(const FunctionBody& body, const std::vector<LiveRange>
 
 // Give scalar SIMD phis and their backedge values first choice over short
 // intermediates. Their shared web preference can then eliminate a transfer
-// cycle on each iteration.
+// cycle on each iteration. When one header's phis alone outnumber the SIMD
+// registers (v0-v15, v18-v31), some of them spill anyway, and a value read
+// more often than any of them (by spill weight) keeps its place.
 void prioritize_loop_webs(const FunctionBody& body, const opt::Cfg& cfg, const std::vector<LiveRange>& ranges,
-	const std::vector<uint32_t>& aliases, std::vector<uint32_t>& order)
+	const std::vector<uint32_t>& aliases, const std::vector<uint64_t>& weight, std::vector<uint32_t>& order)
 {
 	if (cfg.rpo_index.empty())
 		return;
 	std::vector<uint8_t> carried;
+	uint32_t phis = 0;
 	for (BlockId b : body.layout)
 	{
 		if (cfg.rpo_index[b] == kNoId)
 			continue;
+		uint32_t here = 0;
 		for (InstId i = body.blocks[b].first; i != kNoId && body.instructions[i].op == Opcode::Phi;
 			i = body.instructions[i].next)
 		{
@@ -173,10 +252,12 @@ void prioritize_loop_webs(const FunctionBody& body, const opt::Cfg& cfg, const s
 					continue;
 				if (carried.empty())
 					carried.assign(body.temps.size(), 0);
+				here += !carried[phi.result];
 				carried[phi.result] = 1;
 				carried[representative(aliases, incoming.index)] = 1;
 			}
 		}
+		phis = std::max(phis, here);
 	}
 	if (carried.empty())
 		return;
@@ -186,7 +267,16 @@ void prioritize_loop_webs(const FunctionBody& body, const opt::Cfg& cfg, const s
 		for (uint32_t i = 0; i < order.size(); ++i)
 			order[i] = i;
 	}
-	std::stable_partition(order.begin(), order.end(), [&](uint32_t i) { return carried[ranges[i].id]; });
+	uint64_t top = 0;
+	const bool crowded = !weight.empty() && phis > 30;
+	if (crowded)
+		for (const auto& range : ranges)
+			if (range.first != kNoId && carried[range.id])
+				top = std::max(top, weight[range.id]);
+	std::stable_partition(order.begin(), order.end(), [&](uint32_t i) {
+		const auto id = ranges[i].id;
+		return carried[id] || (crowded && weight[id] > top);
+	});
 }
 
 // A guarded call that cannot repeat has a path to a return on which
@@ -241,6 +331,22 @@ bool live_into(const LiveRange& range, const Segments& segments, const std::vect
 			live |= it != positions.end() && *it <= b;
 		});
 	return live;
+}
+
+// The first and last positions of each block, as live_ranges numbers them.
+void block_positions(const FunctionBody& body, std::vector<uint32_t>& first, std::vector<uint32_t>& last)
+{
+	first.assign(body.blocks.size(), 0);
+	last.assign(body.blocks.size(), 0);
+	uint32_t at = 2;
+	for (BlockId b : body.layout)
+	{
+		first[b] = b == body.layout.front() ? 0 : at;
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+			at += 2;
+		last[b] = at + 1;
+		at += 2;
+	}
 }
 
 // The positions [first, last] of the entry and the short returns it
@@ -336,20 +442,39 @@ std::vector<unsigned> incoming_registers(
 	return incoming;
 }
 
+// Reuse the tail of the slot area when all its remaining owners live in
+// registers: the frame ends after the last slot still in memory. The
+// original slot offsets below it stay valid.
+uint32_t reused_slot_tail(const FunctionBody& body, const std::vector<uint32_t>& slots,
+	const std::vector<uint8_t>& object_words, uint32_t base)
+{
+	uint32_t frame = base;
+	for (SlotId i = 0; i < slots.size(); ++i)
+		if (!object_words[i] && slots[i] != kNoId)
+		{
+			const Type type = body.slots[i].type;
+			const uint64_t bytes = (storage_bytes(type) + 7) & ~uint64_t(7);
+			const unsigned align = data_alignment(type);
+			frame = std::max(frame, static_cast<uint32_t>(slots[i] + bytes + (align > 16 ? align - 16 : 0)));
+		}
+	return frame;
+}
+
 // The order in which ranges choose homes: by spill priority when the
 // registers may not suffice, with the phi web adjustments above; empty
-// (program order) otherwise.
+// (program order) otherwise. `general_registers` counts the preserved
+// general registers, `assignable` every general register a range can take.
 std::vector<uint32_t> allocation_order(const Program& program, const FunctionBody& body, opt::Cfg& cfg,
 	const std::vector<uint32_t>& aliases, std::vector<uint64_t>& block_weights, const std::vector<LiveRange>& ranges,
 	const Segments& segments, const std::vector<uint32_t>& calls, machine::PhiWebs& webs, uint32_t slots,
-	unsigned level, unsigned general_registers, std::vector<uint64_t>& weight)
+	unsigned level, unsigned general_registers, unsigned assignable, std::vector<uint64_t>& weight)
 {
 	std::vector<uint32_t> order;
 	std::vector<double> priority;
 	const auto simd_pressure = register_pressure(body, ranges, segments, calls, slots, 8, Bank::Simd);
-	if (simd_pressure != RegisterPressure::Fits ||
-		register_pressure(body, ranges, segments, calls, slots, general_registers, Bank::General) !=
-			RegisterPressure::Fits)
+	const auto general_pressure = register_pressure(
+		body, ranges, segments, calls, slots, general_registers, Bank::General);
+	if (simd_pressure != RegisterPressure::Fits || general_pressure != RegisterPressure::Fits)
 	{
 		weight = spill_weights(program, body, cfg, aliases, block_weights);
 		order.resize(ranges.size());
@@ -362,12 +487,17 @@ std::vector<uint32_t> allocation_order(const Program& program, const FunctionBod
 					? simd_spill_priority(body, range, segments, weight[range.id])
 					: static_cast<double>(weight[range.id]));
 		}
-		std::stable_sort(order.begin(), order.end(), [&](uint32_t a, uint32_t b) { return priority[a] > priority[b]; });
+		const auto by_priority = [&](uint32_t a, uint32_t b) { return priority[a] > priority[b]; };
+		std::stable_sort(order.begin(), order.end(), by_priority);
+		if (general_pressure == RegisterPressure::Saturated &&
+			raise_crowded_short_ranges(body, aliases, ranges, segments, calls, slots, static_cast<int32_t>(assignable),
+				static_cast<int32_t>(general_registers), order, priority))
+			std::stable_sort(order.begin(), order.end(), by_priority);
 		if (level >= 2 && !calls.empty() && !webs.empty())
 			prioritize_call_webs(body, ranges, segments, calls, webs, priority, order);
 	}
 	if (level >= 3 && !segments.empty() && !webs.empty())
-		prioritize_loop_webs(body, cfg, ranges, aliases, order);
+		prioritize_loop_webs(body, cfg, ranges, aliases, weight, order);
 	if (level >= 2 && priority.empty() && !order.empty() && !calls.empty() && !webs.empty())
 		prioritize_call_webs(body, ranges, segments, calls, webs, priority, order);
 	return order;
@@ -638,8 +768,14 @@ private:
 class RegisterBank
 {
 public:
-	RegisterBank(const Segments& segments, uint32_t slots) : segments_(segments), slots_(slots) {}
+	// `caller` is the bank's class of registers a call may clobber.
+	RegisterBank(const Segments& segments, uint32_t slots, uint32_t caller)
+		: segments_(segments), slots_(slots), caller_(caller)
+	{}
 	uint32_t live_at(uint32_t slot) const { return initialized_ ? tree_.regs(slot, slot) : 0; }
+	// The registers that ranges hold somewhere in [a, b], and taking one there.
+	uint32_t busy(uint32_t a, uint32_t b) const { return initialized_ ? tree_.regs(a, b) : ~0u; }
+	void take(uint32_t a, uint32_t b, unsigned reg) { tree_.add(a, b, 1, 1u << reg); }
 	// Ask later ranges without a usable preference to leave `reg` free over
 	// `range`, which would remove one of its phi transfers.
 	void hint(const LiveRange& range, unsigned reg)
@@ -711,7 +847,7 @@ private:
 		const unsigned lowest = __builtin_ctz(allowed);
 		if (!hinted_)
 			return lowest;
-		uint32_t open = lowest < 19 ? allowed & ((1u << 19) - 1) : allowed;
+		uint32_t open = allowed & ((1u << lowest) & caller_ ? caller_ : ~caller_);
 		// Only registers hinted somewhere within the range's extent can be
 		// hinted over it.
 		uint32_t from = ~0u, to = 0, near = 0;
@@ -733,12 +869,118 @@ private:
 
 	const Segments& segments_;
 	const LiveRange* queried_ = nullptr;
-	uint32_t slots_, until_[32] = {}, busy_ = 0, hint_to_[32] = {};
+	uint32_t slots_, caller_, until_[32] = {}, busy_ = 0, hint_to_[32] = {};
 	uint32_t hint_from_[32] = { ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u,
 		~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u };
 	machine::PressureTree tree_, hints_;
 	bool initialized_ = false, hinted_ = false;
 };
+// The one block outside a loop that enters its header (the preheader, or a
+// block that also branches elsewhere), or kNoId.
+BlockId loop_entry(const opt::Cfg& cfg, const opt::LoopForest& forest, uint32_t loop)
+{
+	const auto& l = forest.loops[loop];
+	if (l.preheader != kNoId)
+		return l.preheader;
+	BlockId entry = kNoId;
+	for (uint32_t p = cfg.pred_first[l.header]; p < cfg.pred_first[l.header + 1]; ++p)
+	{
+		uint32_t in = forest.innermost[cfg.preds[p]];
+		while (in != kNoId && in != loop)
+			in = forest.loops[in].parent;
+		if (in == loop)
+			continue;
+		if (entry != kNoId && entry != cfg.preds[p])
+			return kNoId;
+		entry = cfg.preds[p];
+	}
+	return entry;
+}
+
+// A division by a literal that constant_division selects needs its
+// multiplier, and a remainder its divisor, in registers. In a loop each is
+// built once at the start of the block that enters the loop when one
+// register is free there and over every block of the loop: a caller register
+// in a loop without calls, or a preserved register the function saves anyway.
+// The divisions of one loop share equal constants.
+void hold_division_constants(const FunctionBody& body, opt::Cfg& cfg, RegisterBank& bank, uint32_t caller,
+	uint32_t saved, std::vector<HeldConstant>& held, std::vector<std::pair<InstId, uint32_t>>& divisions)
+{
+	opt::LoopForest forest;
+	std::vector<uint32_t> first, last, busy, holder, entries;
+	// The registers held over a loop's entry and blocks, and taking one there.
+	const auto held_over = [&](const opt::Loop& l, BlockId entry) {
+		uint32_t regs = bank.busy(first[entry], last[entry]);
+		for (BlockId member : l.blocks)
+			regs |= bank.busy(first[member], last[member]);
+		return regs;
+	};
+	const auto take_over = [&](const opt::Loop& l, BlockId entry, unsigned reg) {
+		bank.take(first[entry], last[entry], reg);
+		for (BlockId member : l.blocks)
+			bank.take(first[member], last[member], reg);
+	};
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+		{
+			uint64_t values[2];
+			if (!division_constants(body.instructions[i], body, values[0], values[1]))
+				continue;
+			if (first.empty())
+			{
+				if (cfg.dom_in.size() != cfg.block_count)
+					opt::complete_cfg(cfg);
+				opt::find_loops(body, cfg, forest);
+				block_positions(body, first, last);
+				busy.assign(forest.loops.size(), 0);
+				entries.assign(forest.loops.size(), kNoId - 1);
+			}
+			const uint32_t loop = forest.innermost[b];
+			if (loop == kNoId)
+				continue;
+			const auto& l = forest.loops[loop];
+			if (entries[loop] == kNoId - 1)
+			{
+				const BlockId entry = loop_entry(cfg, forest, loop);
+				entries[loop] = entry != kNoId && last[entry] ? entry : kNoId;
+				if (entries[loop] == kNoId)
+					continue;
+				// A constant built at the start of the entry block lives through its calls too.
+				bool calls = false;
+				const auto calling = [&](BlockId member) {
+					for (InstId k = body.blocks[member].first; k != kNoId; k = body.instructions[k].next)
+						calls |= body.instructions[k].op == Opcode::Call;
+				};
+				calling(entry);
+				for (BlockId member : l.blocks)
+					calling(member);
+				busy[loop] = ~(saved | (calls ? 0 : caller)) | held_over(l, entry);
+			}
+			if (entries[loop] == kNoId)
+				continue;
+			uint32_t regs = 0;
+			for (unsigned k = 0; k < 2; ++k)
+			{
+				unsigned reg = 255;
+				for (uint32_t h = 0; h < held.size() && reg == 255 && values[k]; ++h)
+					if (holder[h] == loop && held[h].value == values[k])
+						reg = held[h].reg;
+				if (reg == 255 && values[k] && ~busy[loop])
+				{
+					reg = __builtin_ctz(~busy[loop]);
+					busy[loop] |= 1u << reg;
+					take_over(l, entries[loop], reg);
+					held.push_back(HeldConstant{ entries[loop], reg, values[k] });
+					holder.push_back(loop);
+				}
+				regs |= reg << (8 * k);
+			}
+			if (regs != 0xffff)
+				divisions.push_back(std::make_pair(i, regs));
+		}
+	std::sort(divisions.begin(), divisions.end());
+}
+
 // The phi groups' registers as ranges choose theirs. A group's first member
 // to get a register asks the later ones, and the ranges assigned in between,
 // to leave it to them.
@@ -793,6 +1035,19 @@ public:
 		}
 		return reg;
 	}
+	// A floating member chooses among SIMD registers by the same rule, with
+	// the groups' SIMD registers kept apart from their general ones.
+	unsigned choose_simd(RegisterBank& bank, const LiveRange& range, uint32_t allowed, unsigned preferred,
+		unsigned alternate, bool across_call)
+	{
+		if (simd_regs_.size() != regs_.size())
+			simd_regs_.assign(regs_.size(), kNoId);
+		regs_.swap(simd_regs_);
+		const auto reg = choose(
+			bank, range, allowed, [](TempId) { return 0u; }, preferred, alternate, across_call, false);
+		regs_.swap(simd_regs_);
+		return reg;
+	}
 	// Whether `rare` holds for every member that crosses a call, found once
 	// for each group.
 	template<typename Rare>
@@ -836,7 +1091,7 @@ public:
 private:
 	const std::vector<LiveRange>& ranges_;
 	PhiGroups groups_;
-	std::vector<uint32_t> regs_;
+	std::vector<uint32_t> regs_, simd_regs_;
 	std::vector<uint8_t> assigned_, rare_, within_;
 };
 
@@ -1040,14 +1295,18 @@ void Selector::allocate()
 	std::vector<uint32_t> web_regs(webs.empty() ? 0 : count, kNoId);
 	std::stable_sort(
 		ranges.begin(), ranges.end(), [](const LiveRange& a, const LiveRange& b) { return a.first < b.first; });
-	// x9-x11, x15-x17 and v16-v17 are selector scratch; x18 is platform-reserved.
+	// x9-x11, x15-x17 and v16-v17 are selector scratch; x18 is the platform
+	// register on Darwin.
 	bool free_x8 = !named_.darwin && !result_.indirect && !out_.exceptions;
 	const auto incoming = incoming_registers(program_, signature_, body_, named_.darwin, free_x8);
 	const uint32_t slots = 2 * (body_.instructions.size() + body_.layout.size()) + 3;
 	const auto outgoing = call_registers();
 	std::vector<uint64_t> weight;
+	// x0-x7, x12-x14, x8 when free, x18 off Darwin and the preserved registers.
+	const unsigned preserved_count = dynamic_stack_ ? 9 : 10;
+	const unsigned assignable = preserved_count + 11 + (free_x8 ? 1 : 0) + (named_.darwin ? 0 : 1);
 	const auto order = allocation_order(program_, body_, cfg, aliases_, block_weights_, ranges, segments, calls, webs,
-		slots, level_, dynamic_stack_ ? 9 : 10, weight);
+		slots, level_, preserved_count, assignable, weight);
 	const bool split_calls = level_ >= 2 && !named_.darwin && !dynamic_stack_ && body_.code_labels.empty() &&
 		calls.size() <= 64;
 	if (split_calls && calls.size() > 1 && block_weights_.empty() && !cfg.succ_first.empty())
@@ -1064,7 +1323,7 @@ void Selector::allocate()
 		!body_.code_labels.empty() || calls.empty();
 	std::vector<uint32_t> frameless_blocks;
 	constexpr uint32_t high_caller_simd = 0xfffc0000; // v18 through v31, clear of argument and scratch registers.
-	RegisterBank general(segments, slots), simd(segments, slots);
+	RegisterBank general(segments, slots, (1u << 19) - 1), simd(segments, slots, ~kPreservedSimd);
 	std::vector<uint32_t> simd_web_regs;
 	uint32_t saved_fp = 0;
 	uint32_t saved = dynamic_stack_ ? 1u << 28 : 0;
@@ -1086,12 +1345,19 @@ void Selector::allocate()
 			return 0u;
 		return cold_calls && groups.rare_calls_only(group, segments, calls, rare) ? all & saved : all;
 	};
-	for (uint32_t i = 0; i < ranges.size(); ++i)
+	// A floating value that finds no SIMD register takes a general one only
+	// after every integer and address value has chosen: there it trades a
+	// reload for a move at each use, which an integer value saves outright.
+	std::vector<uint32_t> deferred;
+	for (uint32_t i = 0; i < ranges.size() + deferred.size(); ++i)
 	{
-		const auto& range = ranges[order.empty() ? i : order[i]];
+		const bool second = i >= ranges.size();
+		const uint32_t index = second ? deferred[i - ranges.size()] : order.empty() ? i : order[i];
+		const auto& range = ranges[index];
 		if (range.first == kNoId)
 			continue;
-		groups.start(order.empty() ? i : order[i]);
+		if (!second)
+			groups.start(index);
 		bool at_call = false, across_call = false;
 		uint32_t kept = !out_.exceptions && !leaf_registers_.empty() ? kLeafKept : 0;
 		if (!calls.empty())
@@ -1110,7 +1376,7 @@ void Selector::allocate()
 			: 0xff;
 		if (range.first == 0)
 			arguments &= range.id < incoming.size() && incoming[range.id] != kNoId ? 1u << incoming[range.id] : 0;
-		if (type.is_float() && !memory_value(type))
+		if (type.is_float() && !memory_value(type) && !second)
 		{
 			// Both Arm ABIs preserve the low 64 bits of v8 through v15.
 			const auto preferred = range.affinity == kNoId ? kNoId : vectors_[range.affinity];
@@ -1123,9 +1389,9 @@ void Selector::allocate()
 			const auto alternate = root == kNoId ? kNoId : simd_web_regs[root];
 			if (!across_call && range.first != 0)
 				allowed |= saved_fp & ((preferred < 32 ? 1u << preferred : 0) | (alternate < 32 ? 1u << alternate : 0));
-			auto reg = simd.assign(range, allowed, preferred, alternate);
+			auto reg = groups.choose_simd(simd, range, allowed, preferred, alternate, across_call);
 			if (reg == kNoId && !across_call)
-				reg = simd.assign(range, kPreservedSimd, preferred, alternate);
+				reg = groups.choose_simd(simd, range, kPreservedSimd, preferred, alternate, across_call);
 			// Keep scalar arithmetic in its register bank. With only rare
 			// calls to cross, save the live scalar lanes on those paths.
 			if (reg == kNoId && across_call && cold_calls && !live_into(range, segments, facts.landings))
@@ -1145,10 +1411,12 @@ void Selector::allocate()
 				saved_fp |= preserved;
 				continue;
 			}
-			// The incoming SIMD argument does not own the corresponding GPR.
-			if (range.first == 0 || at_call)
-				arguments = 0;
+			deferred.push_back(index);
+			continue;
 		}
+		// The incoming SIMD argument does not own the corresponding GPR.
+		if (second && (range.first == 0 || at_call))
+			arguments = 0;
 		if (memory_value(type))
 		{
 			// Argument registers are free between calls. A quadword
@@ -1169,7 +1437,10 @@ void Selector::allocate()
 		}
 		if (range.first == 0)
 			kept &= ~0xffu | (range.id < incoming.size() && incoming[range.id] < 8 ? 1u << incoming[range.id] : 0);
-		uint32_t caller = across_call ? kept : arguments | (7u << 12) | (!at_call && free_x8 ? 1u << 8 : 0);
+		// Linux leaves x18 to the program as a temporary; Darwin reserves it.
+		uint32_t caller = across_call
+			? kept
+			: arguments | (7u << 12) | (!at_call && free_x8 ? 1u << 8 : 0) | (named_.darwin ? 0 : 1u << 18);
 		// Keep an incoming scalar in its ABI register when its live range
 		// crosses only cold calls. The saved slot belongs to this register.
 		// A value a landing pad reads stays in its home at every call.
@@ -1219,6 +1490,10 @@ void Selector::allocate()
 		if (root != kNoId && reg != kNoId && (web_regs[root] == kNoId || (reg >= 19 && web_regs[root] < 19)))
 			web_regs[root] = reg;
 	}
+	if (level_ >= 3 && !segments.empty() && body_.code_labels.empty())
+		hold_division_constants(body_, cfg, general,
+			0xffu | (7u << 12) | (free_x8 ? 1u << 8 : 0) | (named_.darwin ? 0 : 1u << 18),
+			saved & ((dynamic_stack_ ? 0x1ffu : 0x3ffu) << 19), held_constants_, held_divisions_);
 	for (auto& entry : entry_regs_)
 		entry = general.live_at(entry);
 	// Keeping callee saves together lets STP and LDP share both the transfer
@@ -1232,20 +1507,20 @@ void Selector::allocate()
 	parameter_homes(cfg);
 	register_objects();
 	if (!object_words_.empty())
-	{
-		// Reuse the tail of the slot area when all its remaining owners
-		// live in registers. The original slot offsets below it stay valid.
-		frame_ = slot_base;
-		for (SlotId i = 0; i < slots_.size(); ++i)
-			if (!object_words_[i] && slots_[i] != kNoId)
-			{
-				const Type type = body_.slots[i].type;
-				const uint64_t bytes = (storage_bytes(type) + 7) & ~uint64_t(7);
-				const unsigned align = data_alignment(type);
-				frame_ = std::max(frame_, static_cast<uint32_t>(slots_[i] + bytes + (align > 16 ? align - 16 : 0)));
-			}
-	}
+		frame_ = reused_slot_tail(body_, slots_, object_words_, slot_base);
 	call_result_homes();
+	spill_homes(ranges);
+}
+
+// The frame homes of the ranges left without a register, a call result
+// copy slot or a home already; then the aliases take their representatives'
+// registers and homes. Ranges that never overlap share a spill slot.
+void Selector::spill_homes(const std::vector<LiveRange>& ranges)
+{
+	const auto home = [&](TempId id) {
+		const auto type = body_.temps[id].type;
+		return reserve((storage_bytes(type) + 7) & ~uint64_t(7), std::max(8u, data_alignment(type)));
+	};
 	machine::IntervalSlots scalar_spills, vector_spills;
 	for (const auto& range : ranges)
 	{
@@ -1272,6 +1547,8 @@ void Selector::allocate()
 				remat_slots_[id] = remat_slots_[aliases_[id]];
 			registers_[id] = registers_[aliases_[id]];
 			homes_[id] = homes_[aliases_[id]];
+			if (body_.temps[id].type.is_vector())
+				vectors_[id] = vectors_[aliases_[id]];
 		}
 }
 } // namespace aarch64

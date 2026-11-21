@@ -1,0 +1,52 @@
+{
+  "source": true,
+  "units": [
+    "700-wide-division-constants.t.1"
+  ],
+  "llvm_interop": true,
+  "commands": [
+    {
+      "exit": 42,
+      "stdout": ""
+    }
+  ],
+  "quality": {
+    "levels": [
+      3
+    ],
+    "functions": {
+      "quotients": {
+        "divides": 0,
+        "instructions": 68
+      },
+      "negative_quotients": {
+        "divides": 0,
+        "instructions": 66
+      },
+      "remainders": {
+        "divides": 0,
+        "instructions": 82
+      },
+      "uquotients": {
+        "divides": 0,
+        "instructions": 74
+      },
+      "ueven": {
+        "divides": 0,
+        "instructions": 66
+      },
+      "uremainders": {
+        "divides": 0,
+        "instructions": 64
+      },
+      "words": {
+        "divides": 0,
+        "instructions": 67
+      },
+      "word_remainders": {
+        "divides": 0,
+        "instructions": 75
+      }
+    }
+  }
+}
