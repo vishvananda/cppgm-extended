@@ -26,7 +26,8 @@ private:
 	bool literal_index(const Instruction& inst) const;
 	bool speculable(const Instruction& inst) const;
 	bool costly(const Instruction& inst) const;
-	bool worth_moving(const Instruction& inst, bool calls) const;
+	bool one_reader(TempId t);
+	bool worth_moving(const Instruction& inst, bool calls);
 	void find_feeders(uint32_t loop);
 	bool sweep(uint32_t loop, bool apply);
 	struct Term
@@ -143,9 +144,18 @@ bool LoopMotion::costly(const Instruction& inst) const
 		op == BinaryOp::UMod;
 }
 
+// Whether temp `t` has one reader. (Counted when first asked: most loops
+// have no candidate.)
+bool LoopMotion::one_reader(TempId t)
+{
+	if (uses_.size() != body_.temps.size())
+		count_uses(body_, uses_);
+	return uses_[t] == 1;
+}
+
 // A loop with a call would carry the value across it in memory or in one of
 // the few registers calls keep: only a costly computation pays for that.
-bool LoopMotion::worth_moving(const Instruction& inst, bool calls) const
+bool LoopMotion::worth_moving(const Instruction& inst, bool calls)
 {
 	if (inst.type.kind() == TypeKind::I128 ||
 		(inst.op == Opcode::Convert && convert_source_type(inst).kind() == TypeKind::I128))
@@ -176,9 +186,12 @@ bool LoopMotion::worth_moving(const Instruction& inst, bool calls) const
 		return !calls;
 	case Opcode::Vector:
 		// Arm can multiply by a repeated lane without materializing the
-		// broadcast. Leave it beside the multiply to keep that opportunity.
+		// broadcast. Leave it beside the multiply, its one reader, to keep
+		// that opportunity. (A broadcast other instructions read too is
+		// materialized wherever it stays.)
 		if (!calls && inst.sub == static_cast<unsigned>(VectorOp::Pshufd) && inst.next != kNoId &&
-			inst.ops[2].is(ValueKind::Integer) && target_model::is_aarch64(c_.program.target))
+			inst.ops[2].is(ValueKind::Integer) && target_model::is_aarch64(c_.program.target) &&
+			one_reader(inst.result))
 		{
 			const auto& next = body_.instructions[inst.next];
 			const uint64_t mask = body_.literals[inst.ops[2].index].low;
@@ -258,10 +271,7 @@ bool LoopMotion::chain_link(Value v, BinaryOp family, Type type, BlockId block)
 	if (def == kNoId || c_.block_of[def] != block || !chain_family(body_.instructions[def], op) || op != family ||
 		body_.instructions[def].type != type)
 		return false;
-	// (Counted when the first candidate needs them: most loops have none.)
-	if (uses_.size() != body_.temps.size())
-		count_uses(body_, uses_);
-	return uses_[v.index] == 1;
+	return one_reader(v.index);
 }
 
 // A reader in the loop extends the chain's value: an index, an integer
